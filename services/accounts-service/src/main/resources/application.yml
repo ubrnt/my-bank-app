@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: accounts-service
+
+server:
+  port: 8082
