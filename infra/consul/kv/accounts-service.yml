@@ -3,6 +3,10 @@ spring:
     username: accounts_service
     password: ${ACCOUNTS_DB_PASSWORD:accounts}
   jpa:
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         default_schema: accounts
+  liquibase:
+    default-schema: accounts

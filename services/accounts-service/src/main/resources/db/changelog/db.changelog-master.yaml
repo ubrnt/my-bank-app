@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changes/001-create-sequence-account-number.sql
+  - include:
+      file: db/changelog/changes/002-create-table-customers.sql
+  - include:
+      file: db/changelog/changes/003-create-table-accounts.sql
+  - include:
+      file: db/changelog/changes/004-create-table-balance-operations.sql
+  - include:
+      file: db/changelog/changes/005-insert-demo-data.sql
