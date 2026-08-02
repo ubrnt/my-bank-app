@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    username: notifications_service
+    password: ${NOTIFICATIONS_DB_PASSWORD:notifications}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: notifications
