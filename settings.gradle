@@ -2,6 +2,8 @@ rootProject.name = 'my-bank-app'
 
 include 'accounts-service'
 include 'notifications-service'
+include 'front-service'
 
 project(':accounts-service').projectDir = file('services/accounts-service')
 project(':notifications-service').projectDir = file('services/notifications-service')
+project(':front-service').projectDir = file('services/front-service')
