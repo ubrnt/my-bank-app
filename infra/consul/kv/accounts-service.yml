@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    username: accounts_service
+    password: ${ACCOUNTS_DB_PASSWORD:accounts}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: accounts
