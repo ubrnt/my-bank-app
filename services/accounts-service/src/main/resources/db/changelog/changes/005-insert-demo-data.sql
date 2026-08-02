@@ -10,7 +10,7 @@ INSERT INTO accounts (uuid, number, customer_id, balance, created_ts, updated_ts
 SELECT gen_random_uuid(),
        '40817810' || lpad(nextval('account_number_seq')::text, 12, '0'),
        c.id,
-       0,
+       100000,
        now(),
        now()
   FROM customers c

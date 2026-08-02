@@ -3,6 +3,7 @@ spring:
     username: accounts_service
     password: ${ACCOUNTS_DB_PASSWORD:accounts}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
