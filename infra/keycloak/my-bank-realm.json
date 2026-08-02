@@ -6,6 +6,9 @@
       "username": "user1",
       "enabled": true,
       "emailVerified": true,
+      "firstName": "user1_first_name",
+      "lastName": "user1_last_name",
+      "email": "user1@my-bank.example",
       "credentials": [
         {
           "type": "password",
@@ -18,6 +21,9 @@
       "username": "user2",
       "enabled": true,
       "emailVerified": true,
+      "firstName": "user2_first_name",
+      "lastName": "user2_last_name",
+      "email": "user2@my-bank.example",
       "credentials": [
         {
           "type": "password",
@@ -30,6 +36,9 @@
       "username": "user3",
       "enabled": true,
       "emailVerified": true,
+      "firstName": "user3_first_name",
+      "lastName": "user3_last_name",
+      "email": "user3@my-bank.example",
       "credentials": [
         {
           "type": "password",

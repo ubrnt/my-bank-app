@@ -1,3 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/my_bank_app
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/my-bank
