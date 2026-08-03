@@ -12,8 +12,7 @@ CREATE TABLE accounts (
     version     BIGINT      NOT NULL DEFAULT 0,
     CONSTRAINT uq_accounts_uuid UNIQUE (uuid),
     CONSTRAINT uq_accounts_number UNIQUE (number),
+    CONSTRAINT uq_accounts_customer UNIQUE (customer_id),
     CONSTRAINT fk_accounts_customer FOREIGN KEY (customer_id) REFERENCES customers (id),
     CONSTRAINT ck_accounts_balance_non_negative CHECK (balance >= 0)
 );
-
-CREATE INDEX ix_accounts_customer ON accounts (customer_id);
