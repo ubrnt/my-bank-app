@@ -19,7 +19,7 @@ import static java.lang.annotation.ElementType.RECORD_COMPONENT;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Adult {
 
-	String message() default "Возраст должен быть {value} лет или больше";
+	String message() default "must be at least {value} years old";
 
 	int value() default 18;
 

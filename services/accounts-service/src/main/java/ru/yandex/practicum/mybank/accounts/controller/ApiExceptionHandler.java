@@ -52,7 +52,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 		List<FieldError> fields = exception.getBindingResult().getFieldErrors().stream()
 				.map(error -> new FieldError(error.getField(), error.getDefaultMessage()))
 				.toList();
-		ErrorResponse body = new ErrorResponse("validation_error", "Проверьте заполнение полей",
+		ErrorResponse body = new ErrorResponse("validation_error", "Request validation failed",
 				new ValidationErrors(fields));
 		return ResponseEntity.status(status).body(body);
 	}
@@ -62,7 +62,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 			HttpStatusCode status, WebRequest request) {
 		HttpStatus resolved = HttpStatus.resolve(status.value());
 		String code = resolved == null ? "error" : resolved.name().toLowerCase();
-		String message = resolved == null ? "Ошибка обработки запроса" : resolved.getReasonPhrase();
+		String message = resolved == null ? "Request processing failed" : resolved.getReasonPhrase();
 		return ResponseEntity.status(status).body(new ErrorResponse(code, message));
 	}
 }

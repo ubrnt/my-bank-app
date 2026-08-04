@@ -7,10 +7,10 @@ import ru.yandex.practicum.mybank.accounts.validation.Adult;
 import java.time.LocalDate;
 
 public record UpdateProfileRequest(
-		@NotBlank(message = "Не должно быть пустым")
+		@NotBlank
 		String name,
 
-		@NotNull(message = "Не должно быть пустым")
+		@NotNull
 		@Adult
 		LocalDate birthdate
 ) {
