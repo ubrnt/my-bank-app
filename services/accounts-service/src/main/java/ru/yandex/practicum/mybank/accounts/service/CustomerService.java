@@ -3,7 +3,9 @@ package ru.yandex.practicum.mybank.accounts.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.accounts.domain.Account;
+import ru.yandex.practicum.mybank.accounts.domain.AggregateType;
 import ru.yandex.practicum.mybank.accounts.domain.Customer;
+import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.accounts.domain.CustomerAccount;
 import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
@@ -19,19 +21,22 @@ public class CustomerService {
 
 	private final CustomerRepository customerRepository;
 	private final AccountRepository accountRepository;
+	private final OutboxService outboxService;
 
-	public CustomerService(CustomerRepository customerRepository, AccountRepository accountRepository) {
+	public CustomerService(CustomerRepository customerRepository, AccountRepository accountRepository,
+			OutboxService outboxService) {
 		this.customerRepository = customerRepository;
 		this.accountRepository = accountRepository;
+		this.outboxService = outboxService;
 	}
 
 	public CustomerAccountDto getCustomerAccount(String login) {
-		return customerAccount(findCustomerAccount(login));
+		return toDto(findCustomerAccount(login));
 	}
 
 	public List<CustomerDto> findOthers(String login) {
 		return customerRepository.findOthers(login).stream()
-				.map(customer -> new CustomerDto(customer.getLogin(), customer.getName()))
+				.map(this::toDto)
 				.toList();
 	}
 
@@ -43,7 +48,10 @@ public class CustomerService {
 		customer.setName(name);
 		customer.setBirthdate(birthdate);
 
-		return customerAccount(customerAccount);
+		CustomerAccountDto dto = toDto(customerAccount);
+		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(), toDto(customer));
+
+		return dto;
 	}
 
 	private CustomerAccount findCustomerAccount(String login) {
@@ -51,7 +59,12 @@ public class CustomerService {
 				.orElseThrow(() -> new CustomerAccountNotFoundException(login));
 	}
 
-	private CustomerAccountDto customerAccount(CustomerAccount customerAccount) {
+	private CustomerDto toDto(Customer customer) {
+		return new CustomerDto(customer.getLogin(), customer.getName());
+	}
+
+	//todo ubrnt mappers?
+	private CustomerAccountDto toDto(CustomerAccount customerAccount) {
 		Customer customer = customerAccount.customer();
 		Account account = customerAccount.account();
 		return new CustomerAccountDto(

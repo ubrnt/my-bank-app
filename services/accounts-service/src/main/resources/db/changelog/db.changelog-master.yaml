@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/changes/005-create-table-balance-operations.sql
   - include:
       file: db/changelog/changes/006-insert-demo-data.sql
+  - include:
+      file: db/changelog/changes/007-create-table-outbox-events.sql
