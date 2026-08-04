@@ -49,7 +49,7 @@ class OutboxServiceTest {
 	void savesEvent() {
 		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, 7L,
 				new RecipientDto(CUSTOMER_UUID, "user1"),
-				new CustomerDto(CUSTOMER_UUID, "user1", "Иван Иванов"));
+				new CustomerDto(CUSTOMER_UUID, "user1", "user1_first_name user1_last_name"));
 
 		ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
 		verify(outboxEventRepository).save(captor.capture());
@@ -61,7 +61,7 @@ class OutboxServiceTest {
 		assertThat(saved.getRecipient())
 				.isEqualTo("{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\"}");
 		assertThat(saved.getPayload()).isEqualTo(
-				"{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\",\"name\":\"Иван Иванов\"}");
+				"{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\",\"name\":\"user1_first_name user1_last_name\"}");
 	}
 
 	@Test
