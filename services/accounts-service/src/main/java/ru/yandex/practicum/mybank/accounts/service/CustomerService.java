@@ -11,6 +11,7 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
+import ru.yandex.practicum.mybank.accounts.service.dto.EventPayloadDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -49,7 +50,8 @@ public class CustomerService {
 		customer.setBirthdate(birthdate);
 
 		CustomerAccountDto dto = toDto(customerAccount);
-		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(), toDto(customer));
+		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(),
+				new EventPayloadDto(customer.getLogin(), customer.getUuid(), toDto(customer)));
 
 		return dto;
 	}

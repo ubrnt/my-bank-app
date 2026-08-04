@@ -5,6 +5,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.accounts.domain.Account;
 import ru.yandex.practicum.mybank.accounts.domain.AggregateType;
 import ru.yandex.practicum.mybank.accounts.domain.BalanceOperation;
+import ru.yandex.practicum.mybank.accounts.domain.Customer;
 import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.accounts.domain.OperationDirection;
 import ru.yandex.practicum.mybank.accounts.domain.Transaction;
@@ -12,6 +13,7 @@ import ru.yandex.practicum.mybank.accounts.domain.TransactionType;
 import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.BalanceOperationRepository;
 import ru.yandex.practicum.mybank.accounts.repository.TransactionRepository;
+import ru.yandex.practicum.mybank.accounts.service.dto.EventPayloadDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
@@ -55,7 +57,7 @@ public class TransactionsService {
 				.save(new BalanceOperation(transaction, account, OperationDirection.DEPOSIT, amount));
 
 		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), dto);
+		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toEventPayloadDto(operation, dto));
 
 		return dto;
 	}
@@ -80,7 +82,7 @@ public class TransactionsService {
 				.save(new BalanceOperation(transaction, account, OperationDirection.WITHDRAW, amount));
 
 		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), dto);
+		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toEventPayloadDto(operation, dto));
 
 		return dto;
 	}
@@ -123,8 +125,10 @@ public class TransactionsService {
 		TransactionDto fromDto = toTransferDto(transaction, withdrawal, deposit);
 		TransactionDto toDto = toTransferDto(transaction, deposit, withdrawal);
 
-		outboxService.save(eventType(fromDto), AggregateType.TRANSACTION, transaction.getId(), fromDto);
-		outboxService.save(eventType(toDto), AggregateType.TRANSACTION, transaction.getId(), toDto);
+		outboxService.save(eventType(fromDto), AggregateType.TRANSACTION, transaction.getId(),
+				toEventPayloadDto(withdrawal, fromDto));
+		outboxService.save(eventType(toDto), AggregateType.TRANSACTION, transaction.getId(),
+				toEventPayloadDto(deposit, toDto));
 
 		return fromDto;
 	}
@@ -202,6 +206,11 @@ public class TransactionsService {
 		};
 
 		return new TransactionDto(transaction.getUuid(), transaction.getType(), operation);
+	}
+
+	private EventPayloadDto toEventPayloadDto(BalanceOperation operation, TransactionDto transaction) {
+		Customer customer = operation.getAccount().getCustomer();
+		return new EventPayloadDto(customer.getLogin(), customer.getUuid(), transaction);
 	}
 
 	private EventType eventType(TransactionDto dto) {
