@@ -36,16 +36,19 @@ public abstract class BaseEntity {
 	@Version
 	private Long version;
 
+	protected BaseEntity() {
+	}
+
+	protected BaseEntity(UUID uuid) {
+		this.uuid = uuid;
+	}
+
 	public Long getId() {
 		return id;
 	}
 
 	public UUID getUuid() {
 		return uuid;
-	}
-
-	public void setUuid(UUID uuid) {
-		this.uuid = uuid;
 	}
 
 	public Instant getCreatedTs() {

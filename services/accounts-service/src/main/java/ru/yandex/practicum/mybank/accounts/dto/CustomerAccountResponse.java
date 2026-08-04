@@ -1,8 +1,6 @@
 package ru.yandex.practicum.mybank.accounts.dto;
 
-import ru.yandex.practicum.mybank.accounts.domain.Account;
-import ru.yandex.practicum.mybank.accounts.domain.Customer;
-import ru.yandex.practicum.mybank.accounts.domain.CustomerAccount;
+import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 
 import java.time.LocalDate;
 
@@ -14,14 +12,12 @@ public record CustomerAccountResponse(
 		long balance
 ) {
 
-	public static CustomerAccountResponse of(CustomerAccount customerAccount) {
-		Customer customer = customerAccount.customer();
-		Account account = customerAccount.account();
+	public static CustomerAccountResponse of(CustomerAccountDto customerAccount) {
 		return new CustomerAccountResponse(
-				customer.getLogin(),
-				customer.getName(),
-				customer.getBirthdate(),
-				account.getNumber(),
-				account.getBalance());
+				customerAccount.login(),
+				customerAccount.name(),
+				customerAccount.birthdate(),
+				customerAccount.number(),
+				customerAccount.balance());
 	}
 }

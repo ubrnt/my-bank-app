@@ -13,6 +13,9 @@ import ru.yandex.practicum.mybank.accounts.dto.ErrorResponse;
 import ru.yandex.practicum.mybank.accounts.dto.FieldError;
 import ru.yandex.practicum.mybank.accounts.dto.ValidationErrors;
 import ru.yandex.practicum.mybank.accounts.service.CustomerAccountNotFoundException;
+import ru.yandex.practicum.mybank.accounts.service.InsufficientFundsException;
+import ru.yandex.practicum.mybank.accounts.service.SameAccountException;
+import ru.yandex.practicum.mybank.accounts.service.TransactionConflictException;
 
 import java.util.List;
 
@@ -23,6 +26,24 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleCustomerAccountNotFound(CustomerAccountNotFoundException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(new ErrorResponse("customer_account_not_found", exception.getMessage()));
+	}
+
+	@ExceptionHandler(TransactionConflictException.class)
+	public ResponseEntity<ErrorResponse> handleTransactionConflict(TransactionConflictException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse("transaction_conflict", exception.getMessage()));
+	}
+
+	@ExceptionHandler(InsufficientFundsException.class)
+	public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException exception) {
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+				.body(new ErrorResponse("insufficient_funds", exception.getMessage()));
+	}
+
+	@ExceptionHandler(SameAccountException.class)
+	public ResponseEntity<ErrorResponse> handleSameAccount(SameAccountException exception) {
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+				.body(new ErrorResponse("same_account", exception.getMessage()));
 	}
 
 	@Override

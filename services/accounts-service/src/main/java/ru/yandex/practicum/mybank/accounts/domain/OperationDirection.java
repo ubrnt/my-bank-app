@@ -1,6 +1,6 @@
 package ru.yandex.practicum.mybank.accounts.domain;
 
-public enum OperationType {
+public enum OperationDirection {
 	DEPOSIT,
 	WITHDRAW
 }

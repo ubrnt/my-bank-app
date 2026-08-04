@@ -9,11 +9,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "balance_operations")
 public class BalanceOperation extends BaseEntity {
+
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "transaction_id", nullable = false, updatable = false)
+	private Transaction transaction;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "account_id", nullable = false, updatable = false)
@@ -21,30 +23,42 @@ public class BalanceOperation extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, updatable = false, length = 16)
-	private OperationType type;
+	private OperationDirection direction;
 
 	@Column(nullable = false, updatable = false)
 	private long amount;
 
+	@Column(name = "balance_after", nullable = false, updatable = false)
+	private long balanceAfter;
+
 	protected BalanceOperation() {
 	}
 
-	public BalanceOperation(UUID uuid, Account account, OperationType type, long amount) {
-		setUuid(uuid);
+	public BalanceOperation(Transaction transaction, Account account, OperationDirection direction, long amount) {
+		this.transaction = transaction;
 		this.account = account;
-		this.type = type;
+		this.direction = direction;
 		this.amount = amount;
+		this.balanceAfter = account.getBalance();
+	}
+
+	public Transaction getTransaction() {
+		return transaction;
 	}
 
 	public Account getAccount() {
 		return account;
 	}
 
-	public OperationType getType() {
-		return type;
+	public OperationDirection getDirection() {
+		return direction;
 	}
 
 	public long getAmount() {
 		return amount;
+	}
+
+	public long getBalanceAfter() {
+		return balanceAfter;
 	}
 }
