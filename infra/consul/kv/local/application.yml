@@ -6,3 +6,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8180/realms/my-bank
+      client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8180/realms/my-bank

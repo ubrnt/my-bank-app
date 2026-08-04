@@ -2,6 +2,16 @@ spring:
   datasource:
     username: accounts_service
     password: ${ACCOUNTS_DB_PASSWORD:accounts}
+  security:
+    oauth2:
+      client:
+        registration:
+          notifications:
+            provider: keycloak
+            client-id: accounts-service
+            client-secret: ${ACCOUNTS_SERVICE_SECRET:accounts-service-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications:write
   jpa:
     open-in-view: false
     hibernate:
@@ -11,3 +21,16 @@ spring:
         default_schema: accounts
   liquibase:
     default-schema: accounts
+
+mybank:
+  outbox:
+    poll-interval: 5s
+    batch-size: 20
+    stale-timeout: 5m
+    max-attempts: 5
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      notifications:
+        base-config: default
