@@ -25,7 +25,7 @@ public class TransactionController {
 	@PostMapping("/deposit")
 	public TransactionResponse deposit(@Valid @RequestBody DepositRequest request) {
 		TransactionDto transaction = transactionsService.deposit(
-				request.transactionId(), request.login(), request.amount());
+				request.transactionUuid(), request.login(), request.amount());
 
 		return TransactionResponse.of(transaction);
 	}
@@ -33,7 +33,7 @@ public class TransactionController {
 	@PostMapping("/withdraw")
 	public TransactionResponse withdraw(@Valid @RequestBody WithdrawRequest request) {
 		TransactionDto transaction = transactionsService.withdraw(
-				request.transactionId(), request.login(), request.amount());
+				request.transactionUuid(), request.login(), request.amount());
 
 		return TransactionResponse.of(transaction);
 	}
@@ -41,7 +41,7 @@ public class TransactionController {
 	@PostMapping("/transfer")
 	public TransactionResponse transfer(@Valid @RequestBody TransferRequest request) {
 		TransactionDto transaction = transactionsService.transfer(
-				request.transactionId(), request.fromLogin(),
+				request.transactionUuid(), request.fromLogin(),
 				request.toLogin(), request.amount());
 
 		return TransactionResponse.of(transaction);

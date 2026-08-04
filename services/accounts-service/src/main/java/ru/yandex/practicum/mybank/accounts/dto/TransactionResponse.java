@@ -7,7 +7,7 @@ import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 import java.util.UUID;
 
 public record TransactionResponse(
-		UUID id,
+		UUID uuid,
 		String type,
 		Operation operation
 ) {
@@ -15,7 +15,7 @@ public record TransactionResponse(
 	//todo ubrnt, think whether we need to have dto's at all
 	public static TransactionResponse of(TransactionDto transaction) {
 		return new TransactionResponse(
-				transaction.id(),
+				transaction.uuid(),
 				transaction.type().name().toLowerCase(),
 				Operation.of(transaction.operation()));
 	}

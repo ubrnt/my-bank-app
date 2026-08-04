@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 
 public record DepositRequest(
-		@NotNull UUID transactionId,
+		@NotNull UUID transactionUuid,
 		@NotBlank String login,
 		@Positive long amount
 ) {
