@@ -11,7 +11,7 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
-import ru.yandex.practicum.mybank.accounts.service.dto.EventPayloadDto;
+import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -51,7 +51,7 @@ public class CustomerService {
 
 		CustomerAccountDto dto = toDto(customerAccount);
 		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(),
-				new EventPayloadDto(customer.getLogin(), customer.getUuid(), toDto(customer)));
+				new RecipientDto(customer.getUuid(), customer.getLogin()), toDto(customer));
 
 		return dto;
 	}
@@ -62,7 +62,7 @@ public class CustomerService {
 	}
 
 	private CustomerDto toDto(Customer customer) {
-		return new CustomerDto(customer.getLogin(), customer.getName());
+		return new CustomerDto(customer.getUuid(), customer.getLogin(), customer.getName());
 	}
 
 	//todo ubrnt mappers?

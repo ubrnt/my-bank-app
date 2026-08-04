@@ -7,6 +7,7 @@ CREATE TABLE outbox_events (
     event_type     VARCHAR(32) NOT NULL,
     aggregate_type VARCHAR(32) NOT NULL,
     aggregate_id   BIGINT      NOT NULL,
+    recipient      JSONB       NOT NULL,
     payload        JSONB       NOT NULL,
     status         VARCHAR(16) NOT NULL,
     locked_at      TIMESTAMPTZ,

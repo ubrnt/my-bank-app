@@ -1,6 +1,5 @@
 package ru.yandex.practicum.mybank.accounts.dto;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
@@ -20,7 +19,6 @@ public record TransactionResponse(
 				Operation.of(transaction.operation()));
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Operation(
 			String direction,
 			String fromLogin,

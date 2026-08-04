@@ -13,8 +13,8 @@ import ru.yandex.practicum.mybank.accounts.domain.TransactionType;
 import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.BalanceOperationRepository;
 import ru.yandex.practicum.mybank.accounts.repository.TransactionRepository;
-import ru.yandex.practicum.mybank.accounts.service.dto.EventPayloadDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
+import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
 import java.util.List;
@@ -57,7 +57,7 @@ public class TransactionsService {
 				.save(new BalanceOperation(transaction, account, OperationDirection.DEPOSIT, amount));
 
 		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toEventPayloadDto(operation, dto));
+		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toRecipientDto(operation), dto);
 
 		return dto;
 	}
@@ -82,7 +82,7 @@ public class TransactionsService {
 				.save(new BalanceOperation(transaction, account, OperationDirection.WITHDRAW, amount));
 
 		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toEventPayloadDto(operation, dto));
+		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toRecipientDto(operation), dto);
 
 		return dto;
 	}
@@ -126,9 +126,9 @@ public class TransactionsService {
 		TransactionDto toDto = toTransferDto(transaction, deposit, withdrawal);
 
 		outboxService.save(eventType(fromDto), AggregateType.TRANSACTION, transaction.getId(),
-				toEventPayloadDto(withdrawal, fromDto));
+				toRecipientDto(withdrawal), fromDto);
 		outboxService.save(eventType(toDto), AggregateType.TRANSACTION, transaction.getId(),
-				toEventPayloadDto(deposit, toDto));
+				toRecipientDto(deposit), toDto);
 
 		return fromDto;
 	}
@@ -208,9 +208,9 @@ public class TransactionsService {
 		return new TransactionDto(transaction.getUuid(), transaction.getType(), operation);
 	}
 
-	private EventPayloadDto toEventPayloadDto(BalanceOperation operation, TransactionDto transaction) {
+	private RecipientDto toRecipientDto(BalanceOperation operation) {
 		Customer customer = operation.getAccount().getCustomer();
-		return new EventPayloadDto(customer.getLogin(), customer.getUuid(), transaction);
+		return new RecipientDto(customer.getUuid(), customer.getLogin());
 	}
 
 	private EventType eventType(TransactionDto dto) {
