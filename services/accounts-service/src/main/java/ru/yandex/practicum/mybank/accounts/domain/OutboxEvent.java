@@ -27,6 +27,10 @@ public class OutboxEvent extends BaseEntity {
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, updatable = false)
+	private String recipient;
+
+	@JdbcTypeCode(SqlTypes.JSON)
+	@Column(nullable = false, updatable = false)
 	private String payload;
 
 	@Enumerated(EnumType.STRING)
@@ -48,12 +52,34 @@ public class OutboxEvent extends BaseEntity {
 	protected OutboxEvent() {
 	}
 
-	public OutboxEvent(EventType eventType, AggregateType aggregateType, long aggregateId, String payload) {
+	public OutboxEvent(EventType eventType, AggregateType aggregateType, long aggregateId, String recipient,
+			String payload) {
 		this.eventType = eventType;
 		this.aggregateType = aggregateType;
 		this.aggregateId = aggregateId;
+		this.recipient = recipient;
 		this.payload = payload;
 		this.status = OutboxStatus.PENDING;
+	}
+
+	public void markProcessed() {
+		this.status = OutboxStatus.PROCESSED;
+		this.processedAt = Instant.now();
+		this.lockedAt = null;
+	}
+
+	public void markPending(String error) {
+		this.status = OutboxStatus.PENDING;
+		this.attempts++;
+		this.lastError = error;
+		this.lockedAt = null;
+	}
+
+	public void markFailed(String error) {
+		this.status = OutboxStatus.FAILED;
+		this.attempts++;
+		this.lastError = error;
+		this.lockedAt = null;
 	}
 
 	public EventType getEventType() {
@@ -66,6 +92,10 @@ public class OutboxEvent extends BaseEntity {
 
 	public long getAggregateId() {
 		return aggregateId;
+	}
+
+	public String getRecipient() {
+		return recipient;
 	}
 
 	public String getPayload() {
