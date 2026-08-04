@@ -1,6 +1,24 @@
 {
   "realm": "my-bank",
   "enabled": true,
+  "clients": [
+    {
+      "clientId": "front-service",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "front-service-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ]
+    }
+  ],
   "users": [
     {
       "username": "user1",
