@@ -1,5 +1,19 @@
 plugins {
 	id 'org.springframework.boot'
+	id 'org.springframework.cloud.contract'
+	id 'maven-publish'
+}
+
+contracts {
+	baseClassForTests = 'ru.yandex.practicum.mybank.accounts.contracts.ContractsBase'
+}
+
+publishing {
+	publications {
+		stubs(MavenPublication) {
+			artifact verifierStubsJar
+		}
+	}
 }
 
 dependencies {
