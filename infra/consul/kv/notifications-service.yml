@@ -2,6 +2,16 @@ spring:
   datasource:
     username: notifications_service
     password: ${NOTIFICATIONS_DB_PASSWORD:notifications}
+  security:
+    oauth2:
+      client:
+        registration:
+          accounts:
+            provider: keycloak
+            client-id: notifications-service
+            client-secret: ${NOTIFICATIONS_SERVICE_SECRET:notifications-service-secret}
+            authorization-grant-type: client_credentials
+            scope: customer:any:read
   jpa:
     open-in-view: false
     hibernate:
@@ -11,3 +21,9 @@ spring:
         default_schema: notifications
   liquibase:
     default-schema: notifications
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts:
+        base-config: default
