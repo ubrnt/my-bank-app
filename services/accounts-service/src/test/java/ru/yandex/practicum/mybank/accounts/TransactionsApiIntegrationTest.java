@@ -77,7 +77,11 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 								{"transactionUuid": "%s", "fromLogin": "user1", "toLogin": "user2", "amount": 3000}
 								""".formatted(TRANSACTION_UUID)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.operation.direction").value("withdraw"));
+				.andExpect(jsonPath("$.operation.direction").value("withdraw"))
+				.andExpect(jsonPath("$.operation.fromAccountUuid").isNotEmpty())
+				.andExpect(jsonPath("$.operation.fromCustomerUuid").isNotEmpty())
+				.andExpect(jsonPath("$.operation.toAccountUuid").isNotEmpty())
+				.andExpect(jsonPath("$.operation.toCustomerUuid").isNotEmpty());
 
 		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE - 3000);
 		assertThat(balanceOf("user2")).isEqualTo(INITIAL_BALANCE + 3000);

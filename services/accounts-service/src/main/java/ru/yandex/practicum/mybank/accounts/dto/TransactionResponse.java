@@ -21,10 +21,12 @@ public record TransactionResponse(
 
 	public record Operation(
 			String direction,
-			String fromLogin,
 			String fromNumber,
-			String toLogin,
+			UUID fromAccountUuid,
+			UUID fromCustomerUuid,
 			String toNumber,
+			UUID toAccountUuid,
+			UUID toCustomerUuid,
 			long amount,
 			long balanceAfter
 	) {
@@ -32,10 +34,12 @@ public record TransactionResponse(
 		private static Operation of(OperationDto operation) {
 			return new Operation(
 					operation.direction().name().toLowerCase(),
-					operation.fromLogin(),
 					operation.fromNumber(),
-					operation.toLogin(),
+					operation.fromAccountUuid(),
+					operation.fromCustomerUuid(),
 					operation.toNumber(),
+					operation.toAccountUuid(),
+					operation.toCustomerUuid(),
 					operation.amount(),
 					operation.balanceAfter());
 		}

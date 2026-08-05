@@ -154,15 +154,12 @@ public class TransactionsService {
 	//todo mappers ubrnt?
 	private TransactionDto toDto(Transaction transaction, BalanceOperation operation) {
 		Account account = operation.getAccount();
-		String login = account.getCustomer().getLogin();
-		String number = account.getNumber();
-
 		long amount = operation.getAmount();
 		long balanceAfter = operation.getBalanceAfter();
 
 		OperationDto cash = switch (operation.getDirection()) {
-			case DEPOSIT -> OperationDto.deposit(login, number, amount, balanceAfter);
-			case WITHDRAW -> OperationDto.withdrawal(login, number, amount, balanceAfter);
+			case DEPOSIT -> OperationDto.deposit(account, amount, balanceAfter);
+			case WITHDRAW -> OperationDto.withdrawal(account, amount, balanceAfter);
 		};
 
 		return new TransactionDto(transaction.getUuid(), transaction.getType(), cash);
@@ -170,19 +167,14 @@ public class TransactionsService {
 
 	private TransactionDto toTransferDto(Transaction transaction, BalanceOperation ownOperation, BalanceOperation otherOperation) {
 		Account ownAccount = ownOperation.getAccount();
-		String ownLogin = ownAccount.getCustomer().getLogin();
-		String ownNumber = ownAccount.getNumber();
-
 		Account otherAccount = otherOperation.getAccount();
-		String otherLogin = otherAccount.getCustomer().getLogin();
-		String otherNumber = otherAccount.getNumber();
 
 		long amount = ownOperation.getAmount();
 		long balanceAfter = ownOperation.getBalanceAfter();
 
 		OperationDto operation = switch (ownOperation.getDirection()) {
-			case WITHDRAW -> OperationDto.sent(ownLogin, ownNumber, otherLogin, otherNumber, amount, balanceAfter);
-			case DEPOSIT -> OperationDto.received(otherLogin, otherNumber, ownLogin, ownNumber, amount, balanceAfter);
+			case WITHDRAW -> OperationDto.sent(ownAccount, otherAccount, amount, balanceAfter);
+			case DEPOSIT -> OperationDto.received(otherAccount, ownAccount, amount, balanceAfter);
 		};
 
 		return new TransactionDto(transaction.getUuid(), transaction.getType(), operation);

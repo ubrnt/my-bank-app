@@ -30,6 +30,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TransactionControllerTest {
 
 	private static final UUID TRANSACTION_UUID = UUID.fromString("cccc0001-2222-4333-8444-555566660001");
+	private static final UUID ACCOUNT_UUID = UUID.fromString("aaaa0001-2222-4333-8444-555566660001");
+	private static final UUID CUSTOMER_UUID = UUID.fromString("3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111");
 	private static final String DEPOSIT_BODY = """
 			{"transactionUuid": "cccc0001-2222-4333-8444-555566660001", "login": "user1", "amount": 5000}
 			""";
@@ -72,9 +74,11 @@ class TransactionControllerTest {
 				.andExpect(jsonPath("$.uuid").value(TRANSACTION_UUID.toString()))
 				.andExpect(jsonPath("$.type").value("deposit"))
 				.andExpect(jsonPath("$.operation.direction").value("deposit"))
-				.andExpect(jsonPath("$.operation.toLogin").value("user1"))
+				.andExpect(jsonPath("$.operation.toNumber").value("40817810000000000001"))
 				.andExpect(jsonPath("$.operation.balanceAfter").value(105000))
-				.andExpect(jsonPath("$.operation.fromLogin").doesNotExist());
+				.andExpect(jsonPath("$.operation.toAccountUuid").value(ACCOUNT_UUID.toString()))
+				.andExpect(jsonPath("$.operation.toCustomerUuid").value(CUSTOMER_UUID.toString()))
+				.andExpect(jsonPath("$.operation.fromAccountUuid").doesNotExist());
 	}
 
 	@Test
@@ -93,7 +97,8 @@ class TransactionControllerTest {
 
 	private TransactionDto deposit() {
 		return new TransactionDto(TRANSACTION_UUID, TransactionType.DEPOSIT,
-				new OperationDto(OperationDirection.DEPOSIT, null, null, "user1", "40817810000000000001",
+				new OperationDto(OperationDirection.DEPOSIT, null, null, null,
+						"40817810000000000001", ACCOUNT_UUID, CUSTOMER_UUID,
 						5000, 105000));
 	}
 }
