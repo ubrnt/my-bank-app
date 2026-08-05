@@ -108,6 +108,15 @@
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
       }
+    },
+    {
+      "name": "customer:any:read",
+      "description": "Read any customer by uuid",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
     }
   ],
   "clients": [
@@ -143,6 +152,40 @@
       ],
       "optionalClientScopes": [
         "notifications:write"
+      ]
+    },
+    {
+      "clientId": "notifications-service",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "notifications-service-secret",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "realm_client": "false",
+        "post.logout.redirect.uris": "+"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "basic",
+        "profile"
+      ],
+      "optionalClientScopes": [
+        "customer:any:read"
       ]
     },
     {
