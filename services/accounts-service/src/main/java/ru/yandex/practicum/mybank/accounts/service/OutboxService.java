@@ -7,10 +7,10 @@ import ru.yandex.practicum.mybank.accounts.domain.AggregateType;
 import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
 import ru.yandex.practicum.mybank.accounts.repository.OutboxEventRepository;
-import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class OutboxService {
@@ -26,13 +26,12 @@ public class OutboxService {
 		this.properties = properties;
 	}
 
-	public void save(EventType eventType, AggregateType aggregateType, long aggregateId, RecipientDto recipient,
+	public void save(EventType eventType, AggregateType aggregateType, long aggregateId, UUID recipientUuid,
 			Object payload) {
-		String recipientJson = objectMapper.writeValueAsString(recipient);
 		String payloadJson = objectMapper.writeValueAsString(payload);
 
 		outboxEventRepository.save(
-				new OutboxEvent(eventType, aggregateType, aggregateId, recipientJson, payloadJson));
+				new OutboxEvent(eventType, aggregateType, aggregateId, recipientUuid, payloadJson));
 	}
 
 	@Transactional

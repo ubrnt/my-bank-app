@@ -13,7 +13,6 @@ import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
 import ru.yandex.practicum.mybank.accounts.domain.OutboxStatus;
 import ru.yandex.practicum.mybank.accounts.repository.OutboxEventRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
-import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
@@ -48,7 +47,7 @@ class OutboxServiceTest {
 	@Test
 	void savesEvent() {
 		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, 7L,
-				new RecipientDto(CUSTOMER_UUID, "user1"),
+				CUSTOMER_UUID,
 				new CustomerDto(CUSTOMER_UUID, "user1", "user1_first_name user1_last_name"));
 
 		ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
@@ -58,8 +57,7 @@ class OutboxServiceTest {
 		assertThat(saved.getEventType()).isEqualTo(EventType.PROFILE_UPDATED);
 		assertThat(saved.getAggregateType()).isEqualTo(AggregateType.CUSTOMER);
 		assertThat(saved.getAggregateId()).isEqualTo(7L);
-		assertThat(saved.getRecipient())
-				.isEqualTo("{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\"}");
+		assertThat(saved.getRecipientUuid()).isEqualTo(CUSTOMER_UUID);
 		assertThat(saved.getPayload()).isEqualTo(
 				"{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\",\"name\":\"user1_first_name user1_last_name\"}");
 	}
@@ -99,8 +97,8 @@ class OutboxServiceTest {
 	}
 
 	private OutboxEvent eventWithFailedAttempts(int attempts) {
-		OutboxEvent event = new OutboxEvent(EventType.MONEY_SENT, AggregateType.TRANSACTION, 41L,
-				"{\"uuid\":\"3f2a\",\"login\":\"user1\"}", "{\"uuid\":\"cccc\"}");
+		OutboxEvent event = new OutboxEvent(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, 7L,
+				CUSTOMER_UUID, "{\"uuid\":\"cccc\"}");
 
 		for (int attempt = 0; attempt < attempts; attempt++) {
 			event.markPending(ERROR);

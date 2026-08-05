@@ -14,6 +14,7 @@ import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
 import ru.yandex.practicum.mybank.accounts.domain.OutboxStatus;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,9 +34,9 @@ class OutboxEventRepositoryTest {
 
 	@Test
 	void claimsNoMoreThanBatchSize() {
-		save("user1");
-		save("user2");
-		save("user3");
+		saveEvent();
+		saveEvent();
+		saveEvent();
 		flushAndClear();
 
 		List<OutboxEvent> claimed = outboxEventRepository.claim(STALE_TIMEOUT_SECONDS, BATCH_SIZE);
@@ -51,7 +52,7 @@ class OutboxEventRepositoryTest {
 
 	@Test
 	void skipsEventsClaimedBySomeoneElse() {
-		OutboxEvent event = save("user1");
+		OutboxEvent event = saveEvent();
 		flushAndClear();
 		outboxEventRepository.claim(STALE_TIMEOUT_SECONDS, BATCH_SIZE);
 		flushAndClear();
@@ -65,7 +66,7 @@ class OutboxEventRepositoryTest {
 
 	@Test
 	void claimsEventsWhoseLockHasExpired() {
-		OutboxEvent event = save("user1");
+		OutboxEvent event = saveEvent();
 		flushAndClear();
 		outboxEventRepository.claim(STALE_TIMEOUT_SECONDS, BATCH_SIZE);
 		expireLock(event.getId());
@@ -77,7 +78,7 @@ class OutboxEventRepositoryTest {
 
 	@Test
 	void releasesLockWhenProcessed() {
-		save("user1");
+		saveEvent();
 		flushAndClear();
 
 		OutboxEvent claimed = outboxEventRepository.claim(STALE_TIMEOUT_SECONDS, BATCH_SIZE).getFirst();
@@ -91,10 +92,9 @@ class OutboxEventRepositoryTest {
 		assertThat(reloaded.getLockedAt()).isNull();
 	}
 
-	private OutboxEvent save(String login) {
-		return outboxEventRepository.save(new OutboxEvent(EventType.MONEY_SENT, AggregateType.TRANSACTION, 41L,
-				"{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"" + login + "\"}",
-				"{\"uuid\":\"cccc0001-2222-4333-8444-555566660003\"}"));
+	private OutboxEvent saveEvent() {
+		return outboxEventRepository.save(new OutboxEvent(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, 7L,
+				UUID.randomUUID(), "{\"uuid\":\"cccc0001-2222-4333-8444-555566660003\"}"));
 	}
 
 	private void expireLock(long id) {

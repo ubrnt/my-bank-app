@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "outbox_events")
@@ -25,9 +26,8 @@ public class OutboxEvent extends BaseEntity {
 	@Column(name = "aggregate_id", nullable = false, updatable = false)
 	private long aggregateId;
 
-	@JdbcTypeCode(SqlTypes.JSON)
-	@Column(nullable = false, updatable = false)
-	private String recipient;
+	@Column(name = "recipient_uuid", nullable = false, updatable = false)
+	private UUID recipientUuid;
 
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(nullable = false, updatable = false)
@@ -52,12 +52,12 @@ public class OutboxEvent extends BaseEntity {
 	protected OutboxEvent() {
 	}
 
-	public OutboxEvent(EventType eventType, AggregateType aggregateType, long aggregateId, String recipient,
+	public OutboxEvent(EventType eventType, AggregateType aggregateType, long aggregateId, UUID recipientUuid,
 			String payload) {
 		this.eventType = eventType;
 		this.aggregateType = aggregateType;
 		this.aggregateId = aggregateId;
-		this.recipient = recipient;
+		this.recipientUuid = recipientUuid;
 		this.payload = payload;
 		this.status = OutboxStatus.PENDING;
 	}
@@ -94,8 +94,8 @@ public class OutboxEvent extends BaseEntity {
 		return aggregateId;
 	}
 
-	public String getRecipient() {
-		return recipient;
+	public UUID getRecipientUuid() {
+		return recipientUuid;
 	}
 
 	public String getPayload() {

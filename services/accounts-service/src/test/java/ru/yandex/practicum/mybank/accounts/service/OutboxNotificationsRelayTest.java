@@ -16,6 +16,7 @@ import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
 
 import java.net.ConnectException;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -25,9 +26,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class OutboxRelayTest {
+class OutboxNotificationsRelayTest {
 
-	private static final String RECIPIENT_JSON = "{\"uuid\":\"3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111\",\"login\":\"user1\"}";
+	private static final UUID RECIPIENT_UUID = UUID.fromString("3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111");
 	private static final String PAYLOAD_JSON = "{\"uuid\":\"cccc0001-2222-4333-8444-555566660003\"}";
 
 	@Mock
@@ -37,7 +38,7 @@ class OutboxRelayTest {
 	private NotificationsClient notificationsClient;
 
 	@InjectMocks
-	private OutboxRelay outboxRelay;
+	private OutboxNotificationsRelay outboxRelay;
 
 	@Test
 	void doesNotCallNotificationsWhenNothingClaimed() {
@@ -60,8 +61,8 @@ class OutboxRelayTest {
 
 		NotificationRequest request = captor.getValue();
 		assertThat(request.eventUuid()).isEqualTo(event.getUuid());
-		assertThat(request.type()).isEqualTo(EventType.MONEY_SENT);
-		assertThat(request.recipient()).isEqualTo(RECIPIENT_JSON);
+		assertThat(request.type()).isEqualTo(EventType.PROFILE_UPDATED);
+		assertThat(request.recipientUuid()).isEqualTo(RECIPIENT_UUID);
 		assertThat(request.payload()).isEqualTo(PAYLOAD_JSON);
 
 		verify(outboxService).markProcessed(1L);
@@ -97,7 +98,7 @@ class OutboxRelayTest {
 
 	private OutboxEvent claimed(long id) {
 		OutboxEvent event = new OutboxEvent(
-				EventType.MONEY_SENT, AggregateType.TRANSACTION, 41L, RECIPIENT_JSON, PAYLOAD_JSON);
+				EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, 7L, RECIPIENT_UUID, PAYLOAD_JSON);
 		ReflectionTestUtils.setField(event, "id", id);
 
 		return event;

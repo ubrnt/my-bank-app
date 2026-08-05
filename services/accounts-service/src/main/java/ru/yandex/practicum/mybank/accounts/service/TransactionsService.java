@@ -3,10 +3,7 @@ package ru.yandex.practicum.mybank.accounts.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.accounts.domain.Account;
-import ru.yandex.practicum.mybank.accounts.domain.AggregateType;
 import ru.yandex.practicum.mybank.accounts.domain.BalanceOperation;
-import ru.yandex.practicum.mybank.accounts.domain.Customer;
-import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.accounts.domain.OperationDirection;
 import ru.yandex.practicum.mybank.accounts.domain.Transaction;
 import ru.yandex.practicum.mybank.accounts.domain.TransactionType;
@@ -14,7 +11,6 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.BalanceOperationRepository;
 import ru.yandex.practicum.mybank.accounts.repository.TransactionRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
-import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
 import java.util.List;
@@ -28,14 +24,12 @@ public class TransactionsService {
 	private final AccountRepository accountRepository;
 	private final TransactionRepository transactionRepository;
 	private final BalanceOperationRepository balanceOperationRepository;
-	private final OutboxService outboxService;
 
 	public TransactionsService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-							   BalanceOperationRepository balanceOperationRepository, OutboxService outboxService) {
+							   BalanceOperationRepository balanceOperationRepository) {
 		this.accountRepository = accountRepository;
 		this.transactionRepository = transactionRepository;
 		this.balanceOperationRepository = balanceOperationRepository;
-		this.outboxService = outboxService;
 	}
 
 	public TransactionDto deposit(UUID transactionUuid, String login, long amount) {
@@ -56,10 +50,7 @@ public class TransactionsService {
 		BalanceOperation operation = balanceOperationRepository
 				.save(new BalanceOperation(transaction, account, OperationDirection.DEPOSIT, amount));
 
-		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toRecipientDto(operation), dto);
-
-		return dto;
+		return toDto(transaction, operation);
 	}
 
 	public TransactionDto withdraw(UUID transactionUuid, String login, long amount) {
@@ -81,10 +72,7 @@ public class TransactionsService {
 		BalanceOperation operation = balanceOperationRepository
 				.save(new BalanceOperation(transaction, account, OperationDirection.WITHDRAW, amount));
 
-		TransactionDto dto = toDto(transaction, operation);
-		outboxService.save(eventType(dto), AggregateType.TRANSACTION, transaction.getId(), toRecipientDto(operation), dto);
-
-		return dto;
+		return toDto(transaction, operation);
 	}
 
 	public TransactionDto transfer(UUID transactionUuid, String fromLogin, String toLogin, long amount) {
@@ -122,15 +110,7 @@ public class TransactionsService {
 		BalanceOperation deposit = balanceOperationRepository
 				.save(new BalanceOperation(transaction, to, OperationDirection.DEPOSIT, amount));
 
-		TransactionDto fromDto = toTransferDto(transaction, withdrawal, deposit);
-		TransactionDto toDto = toTransferDto(transaction, deposit, withdrawal);
-
-		outboxService.save(eventType(fromDto), AggregateType.TRANSACTION, transaction.getId(),
-				toRecipientDto(withdrawal), fromDto);
-		outboxService.save(eventType(toDto), AggregateType.TRANSACTION, transaction.getId(),
-				toRecipientDto(deposit), toDto);
-
-		return fromDto;
+		return toTransferDto(transaction, withdrawal, deposit);
 	}
 
 	private TransactionClaim tryAcquireClaim(UUID transactionUuid, TransactionType type) {
@@ -206,21 +186,6 @@ public class TransactionsService {
 		};
 
 		return new TransactionDto(transaction.getUuid(), transaction.getType(), operation);
-	}
-
-	private RecipientDto toRecipientDto(BalanceOperation operation) {
-		Customer customer = operation.getAccount().getCustomer();
-		return new RecipientDto(customer.getUuid(), customer.getLogin());
-	}
-
-	private EventType eventType(TransactionDto dto) {
-		return switch (dto.type()) {
-			case DEPOSIT -> EventType.MONEY_DEPOSITED;
-			case WITHDRAW -> EventType.MONEY_WITHDRAWN;
-			case TRANSFER -> dto.operation().direction() == OperationDirection.WITHDRAW
-					? EventType.MONEY_SENT
-					: EventType.MONEY_RECEIVED;
-		};
 	}
 
 	private record TransactionClaim(Transaction transaction, boolean acquired) {

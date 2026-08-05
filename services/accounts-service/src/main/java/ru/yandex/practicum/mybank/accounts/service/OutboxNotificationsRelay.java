@@ -12,14 +12,14 @@ import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
 import java.util.List;
 
 @Component
-public class OutboxRelay {
+public class OutboxNotificationsRelay {
 
-	private static final Logger log = LoggerFactory.getLogger(OutboxRelay.class);
+	private static final Logger log = LoggerFactory.getLogger(OutboxNotificationsRelay.class);
 
 	private final OutboxService outboxService;
 	private final NotificationsClient notificationsClient;
 
-	public OutboxRelay(OutboxService outboxService, NotificationsClient notificationsClient) {
+	public OutboxNotificationsRelay(OutboxService outboxService, NotificationsClient notificationsClient) {
 		this.outboxService = outboxService;
 		this.notificationsClient = notificationsClient;
 	}
@@ -38,7 +38,7 @@ public class OutboxRelay {
 	private void send(OutboxEvent event) {
 		try {
 			notificationsClient.send(new NotificationRequest(
-					event.getUuid(), event.getEventType(), event.getRecipient(), event.getPayload()));
+					event.getUuid(), event.getEventType(), event.getRecipientUuid(), event.getPayload()));
 
 			outboxService.markProcessed(event.getId());
 		} catch (RuntimeException e) {

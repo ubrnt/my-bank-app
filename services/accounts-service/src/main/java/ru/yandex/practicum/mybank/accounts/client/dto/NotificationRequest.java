@@ -8,7 +8,7 @@ import java.util.UUID;
 public record NotificationRequest(
 		UUID eventUuid,
 		EventType type,
-		@JsonRawValue String recipient,
+		UUID recipientUuid,
 		@JsonRawValue String payload
 ) {
 }

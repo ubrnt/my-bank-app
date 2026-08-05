@@ -9,7 +9,7 @@ import ru.yandex.practicum.mybank.accounts.client.NotificationDeliveryException;
 import ru.yandex.practicum.mybank.accounts.client.dto.NotificationRequest;
 import ru.yandex.practicum.mybank.accounts.config.OutboxProperties;
 import ru.yandex.practicum.mybank.accounts.domain.EventType;
-import ru.yandex.practicum.mybank.accounts.service.OutboxRelay;
+import ru.yandex.practicum.mybank.accounts.service.OutboxNotificationsRelay;
 
 import java.net.ConnectException;
 import java.util.Map;
@@ -19,24 +19,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class OutboxRelayIntegrationTest extends AbstractIntegrationTest {
+class OutboxNotificationsRelayIntegrationTest extends AbstractIntegrationTest {
 
 	@Autowired
-	private OutboxRelay outboxRelay;
+	private OutboxNotificationsRelay outboxRelay;
 
 	@Autowired
 	private OutboxProperties outboxProperties;
 
 	@BeforeEach
-	void depositMoney() throws Exception {
-		mockMvc.perform(post("/api/transactions/deposit")
-						.with(serviceToken())
+	void updateProfile() throws Exception {
+		mockMvc.perform(put("/api/customers/me")
+						.with(jwt().jwt(jwt -> jwt
+								.claim("preferred_username", "user1")
+								.claim("scope", "customer:write")))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"transactionUuid": "cccc0001-2222-4333-8444-555566660001", "login": "user1", "amount": 5000}
+								{"name": "user1_new_first_name user1_new_last_name", "birthdate": "1990-01-15"}
 								"""))
 				.andExpect(status().isOk());
 	}
@@ -52,9 +55,10 @@ class OutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
 		NotificationRequest sent = captor.getValue();
 		assertThat(sent.eventUuid()).isEqualTo(eventUuid);
-		assertThat(sent.type()).isEqualTo(EventType.MONEY_DEPOSITED);
-		assertThat(sent.recipient()).contains("\"login\"");
-		assertThat(sent.payload()).contains("\"balanceAfter\"");
+		assertThat(sent.type()).isEqualTo(EventType.PROFILE_UPDATED);
+		assertThat(sent.recipientUuid()).isEqualTo(UUID.fromString(
+				jdbcTemplate.queryForObject("select uuid from customers where login = 'user1'", String.class)));
+		assertThat(sent.payload()).contains("user1_new_first_name user1_new_last_name");
 
 		Map<String, Object> processed = event();
 		assertThat(processed).containsEntry("status", "PROCESSED").containsEntry("attempts", 0);
