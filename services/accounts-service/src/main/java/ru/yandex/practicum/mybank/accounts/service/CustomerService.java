@@ -11,10 +11,10 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
-import ru.yandex.practicum.mybank.accounts.service.dto.RecipientDto;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,7 +32,7 @@ public class CustomerService {
 	}
 
 	public CustomerAccountDto getCustomerAccount(String login) {
-		return toDto(findCustomerAccount(login));
+		return toDto(loadCustomerAccount(login));
 	}
 
 	public List<CustomerDto> findOthers(String login) {
@@ -41,9 +41,15 @@ public class CustomerService {
 				.toList();
 	}
 
+	public CustomerDto getCustomer(UUID uuid) {
+		return customerRepository.findByUuid(uuid)
+				.map(this::toDto)
+				.orElseThrow(() -> new CustomerAccountNotFoundException(uuid));
+	}
+
 	@Transactional
 	public CustomerAccountDto updateProfile(String login, String name, LocalDate birthdate) {
-		CustomerAccount customerAccount = findCustomerAccount(login);
+		CustomerAccount customerAccount = loadCustomerAccount(login);
 
 		Customer customer = customerAccount.customer();
 		customer.setName(name);
@@ -51,12 +57,12 @@ public class CustomerService {
 
 		CustomerAccountDto dto = toDto(customerAccount);
 		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(),
-				new RecipientDto(customer.getUuid(), customer.getLogin()), toDto(customer));
+				customer.getUuid(), toDto(customer));
 
 		return dto;
 	}
 
-	private CustomerAccount findCustomerAccount(String login) {
+	private CustomerAccount loadCustomerAccount(String login) {
 		return accountRepository.findCustomerAccount(login)
 				.orElseThrow(() -> new CustomerAccountNotFoundException(login));
 	}

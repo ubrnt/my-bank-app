@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +15,7 @@ import ru.yandex.practicum.mybank.accounts.dto.UpdateProfileRequest;
 import ru.yandex.practicum.mybank.accounts.service.CustomerService;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/customers")
@@ -40,6 +42,11 @@ public class CustomerController {
 		return customerService.findOthers(login(jwt)).stream()
 				.map(CustomerResponse::of)
 				.toList();
+	}
+
+	@GetMapping("/{uuid}")
+	public CustomerResponse customer(@PathVariable UUID uuid) {
+		return CustomerResponse.of(customerService.getCustomer(uuid));
 	}
 
 	private String login(Jwt jwt) {

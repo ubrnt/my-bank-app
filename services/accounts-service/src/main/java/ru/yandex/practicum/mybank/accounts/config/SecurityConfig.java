@@ -28,6 +28,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/api/customers/others").hasAuthority("SCOPE_customer:others:read")
 						.requestMatchers(HttpMethod.GET, "/api/customers/me").hasAuthority("SCOPE_customer:read")
 						.requestMatchers(HttpMethod.PUT, "/api/customers/me").hasAuthority("SCOPE_customer:write")
+						.requestMatchers(HttpMethod.GET, "/api/customers/*").hasAuthority("SCOPE_customer:any:read")
 						.requestMatchers("/api/transactions/**").hasAuthority("SCOPE_transactions:write")
 						.anyRequest().denyAll())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
