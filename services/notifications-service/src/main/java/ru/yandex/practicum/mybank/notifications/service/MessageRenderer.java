@@ -38,7 +38,7 @@ public class MessageRenderer {
 					text(payload, "operation", "amount"),
 					mask(text(payload, "operation", "fromNumber")),
 					text(payload, "operation", "balanceAfter")};
-			case PROFILE_UPDATED -> new Object[]{text(payload, "name")};
+			case PROFILE_UPDATED -> new Object[]{};
 		};
 
 		return messageSource.getMessage("notification." + type.name(), args, Locale.ROOT);
