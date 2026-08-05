@@ -4,8 +4,10 @@ include 'accounts-service'
 include 'notifications-service'
 include 'front-service'
 include 'bank-persistence-starter'
+include 'bank-chassis'
 
 project(':accounts-service').projectDir = file('services/accounts-service')
 project(':notifications-service').projectDir = file('services/notifications-service')
 project(':front-service').projectDir = file('services/front-service')
 project(':bank-persistence-starter').projectDir = file('libs/bank-persistence-starter')
+project(':bank-chassis').projectDir = file('libs/bank-chassis')
