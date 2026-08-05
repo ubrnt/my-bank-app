@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: notifications-service
+  cloud:
+    consul:
+      enabled: false
+  jackson:
+    default-property-inclusion: non_null
