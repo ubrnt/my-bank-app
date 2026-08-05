@@ -3,6 +3,11 @@ spring:
     username: notifications_service
     password: ${NOTIFICATIONS_DB_PASSWORD:notifications}
   jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
     properties:
       hibernate:
         default_schema: notifications
+  liquibase:
+    default-schema: notifications
