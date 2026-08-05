@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mybank.notifications.config;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +23,9 @@ public class SecurityConfig {
 				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(requests -> requests
+						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers(HttpMethod.GET, healthPath).permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/notifications").hasAuthority("SCOPE_notifications:write")
 						.anyRequest().denyAll())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 				.build();
