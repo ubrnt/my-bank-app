@@ -9,6 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       ACCOUNTS_DB_PASSWORD: ${ACCOUNTS_DB_PASSWORD:-accounts}
       NOTIFICATIONS_DB_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-notifications}
+      CASH_DB_PASSWORD: ${CASH_DB_PASSWORD:-cash}
     ports:
       - "5432:5432"
     volumes:
