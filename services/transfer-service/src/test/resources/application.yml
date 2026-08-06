@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: transfer-service
+  cloud:
+    consul:
+      enabled: false
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      client:
+        registration:
+          accounts-service:
+            provider: keycloak
+            client-id: transfer-service
+            client-secret: test-secret
+            authorization-grant-type: client_credentials
+            scope: transactions:write
+        provider:
+          keycloak:
+            token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
