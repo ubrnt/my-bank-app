@@ -6,7 +6,7 @@ spring:
     oauth2:
       client:
         registration:
-          notifications:
+          notifications-service:
             provider: keycloak
             client-id: accounts-service
             client-secret: ${ACCOUNTS_SERVICE_SECRET:accounts-service-secret}
@@ -32,5 +32,5 @@ mybank:
 resilience4j:
   circuitbreaker:
     instances:
-      notifications:
+      notifications-service:
         base-config: default

@@ -9,6 +9,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import ru.yandex.practicum.mybank.persistence.BaseEntity;
+
 @Entity
 @Table(name = "balance_operations")
 public class BalanceOperation extends BaseEntity {

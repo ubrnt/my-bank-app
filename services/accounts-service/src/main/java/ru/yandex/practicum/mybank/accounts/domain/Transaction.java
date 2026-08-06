@@ -6,6 +6,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
+import ru.yandex.practicum.mybank.persistence.BaseEntity;
+
 import java.util.UUID;
 
 @Entity

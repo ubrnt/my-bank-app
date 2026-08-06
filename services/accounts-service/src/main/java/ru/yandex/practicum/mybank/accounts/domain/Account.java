@@ -7,6 +7,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
+import ru.yandex.practicum.mybank.persistence.BaseEntity;
+
 @Entity
 @Table(name = "accounts")
 public class Account extends BaseEntity {

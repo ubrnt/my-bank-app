@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import ru.yandex.practicum.mybank.persistence.BaseEntity;
+
 import java.time.LocalDate;
 
 @Entity

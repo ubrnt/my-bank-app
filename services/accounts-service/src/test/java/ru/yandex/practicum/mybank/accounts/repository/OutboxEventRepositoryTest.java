@@ -7,7 +7,6 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.mybank.accounts.PostgresContainerConfig;
-import ru.yandex.practicum.mybank.accounts.config.JpaConfig;
 import ru.yandex.practicum.mybank.accounts.domain.AggregateType;
 import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.accounts.domain.OutboxEvent;
@@ -20,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({PostgresContainerConfig.class, JpaConfig.class})
+@Import(PostgresContainerConfig.class)
 class OutboxEventRepositoryTest {
 
 	private static final long STALE_TIMEOUT_SECONDS = 300;

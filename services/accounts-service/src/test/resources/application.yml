@@ -10,7 +10,7 @@ spring:
     oauth2:
       client:
         registration:
-          notifications:
+          notifications-service:
             provider: keycloak
             client-id: accounts-service
             client-secret: test-secret

@@ -80,7 +80,7 @@ class NotificationsContractIntegrationTest {
 		@Bean
 		@Primary
 		public OAuth2AuthorizedClientManager fakeAuthorizedClientManager(ClientRegistrationRepository registrations) {
-			ClientRegistration registration = registrations.findByRegistrationId("notifications");
+			ClientRegistration registration = registrations.findByRegistrationId("notifications-service");
 			OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
 					"fake-token", Instant.now(), Instant.now().plusSeconds(3600));
 
