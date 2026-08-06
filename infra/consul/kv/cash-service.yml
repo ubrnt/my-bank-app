@@ -2,6 +2,16 @@ spring:
   datasource:
     username: cash_service
     password: ${CASH_DB_PASSWORD:cash}
+  security:
+    oauth2:
+      client:
+        registration:
+          accounts-service:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
+            authorization-grant-type: client_credentials
+            scope: transactions:write
   jpa:
     open-in-view: false
     hibernate:
@@ -11,3 +21,9 @@ spring:
         default_schema: cash
   liquibase:
     default-schema: cash
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts-service:
+        base-config: default
