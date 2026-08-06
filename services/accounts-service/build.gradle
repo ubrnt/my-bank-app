@@ -19,6 +19,7 @@ publishing {
 dependencies {
 	implementation project(':bank-chassis')
 	implementation project(':bank-persistence-starter')
+	implementation project(':bank-notifications-outbox-starter')
 
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'

@@ -22,7 +22,7 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import ru.yandex.practicum.mybank.accounts.service.OutboxNotificationsRelay;
+import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxRelay;
 
 import java.time.Instant;
 
@@ -46,14 +46,14 @@ class NotificationsContractIntegrationTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Autowired
-	private OutboxNotificationsRelay outboxNotificationsRelay;
+	private NotificationsOutboxRelay notificationsOutboxRelay;
 
 	@MockitoBean
 	private JwtDecoder jwtDecoder;
 
 	@BeforeEach
 	void resetData() {
-		jdbcTemplate.execute("truncate table outbox_events restart identity");
+		jdbcTemplate.execute("truncate table notifications_outbox restart identity");
 	}
 
 	@Test
@@ -68,9 +68,9 @@ class NotificationsContractIntegrationTest {
 								"""))
 				.andExpect(status().isOk());
 
-		outboxNotificationsRelay.relayPending();
+		notificationsOutboxRelay.relayPending();
 
-		String status = jdbcTemplate.queryForObject("select status from outbox_events", String.class);
+		String status = jdbcTemplate.queryForObject("select status from notifications_outbox", String.class);
 		assertThat(status).isEqualTo("PROCESSED");
 	}
 

@@ -25,7 +25,7 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE + 5000);
 		assertThat(countOf("transactions")).isEqualTo(1);
 		assertThat(countOf("balance_operations")).isEqualTo(1);
-		assertThat(countOf("outbox_events")).isZero();
+		assertThat(countOf("notifications_outbox")).isZero();
 	}
 
 	@Test
@@ -86,7 +86,7 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE - 3000);
 		assertThat(balanceOf("user2")).isEqualTo(INITIAL_BALANCE + 3000);
 		assertThat(countOf("balance_operations")).isEqualTo(2);
-		assertThat(countOf("outbox_events")).isZero();
+		assertThat(countOf("notifications_outbox")).isZero();
 	}
 
 	private void deposit5000() throws Exception {

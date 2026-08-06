@@ -10,7 +10,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
-import ru.yandex.practicum.mybank.accounts.client.NotificationsClient;
+import ru.yandex.practicum.mybank.notifications.outbox.NotificationsClient;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 
@@ -35,7 +35,7 @@ public abstract class AbstractIntegrationTest {
 
 	@AfterEach
 	void resetData() {
-		jdbcTemplate.execute("truncate table balance_operations, transactions, outbox_events restart identity");
+		jdbcTemplate.execute("truncate table balance_operations, transactions, notifications_outbox restart identity");
 		jdbcTemplate.update("update accounts set balance = ?", INITIAL_BALANCE);
 	}
 

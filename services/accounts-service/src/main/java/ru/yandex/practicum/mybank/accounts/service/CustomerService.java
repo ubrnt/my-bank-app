@@ -11,6 +11,7 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
+import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,13 +23,13 @@ public class CustomerService {
 
 	private final CustomerRepository customerRepository;
 	private final AccountRepository accountRepository;
-	private final OutboxService outboxService;
+	private final NotificationsOutboxService notificationsOutboxService;
 
 	public CustomerService(CustomerRepository customerRepository, AccountRepository accountRepository,
-			OutboxService outboxService) {
+			NotificationsOutboxService notificationsOutboxService) {
 		this.customerRepository = customerRepository;
 		this.accountRepository = accountRepository;
-		this.outboxService = outboxService;
+		this.notificationsOutboxService = notificationsOutboxService;
 	}
 
 	public CustomerAccountDto getCustomerAccount(String login) {
@@ -56,7 +57,7 @@ public class CustomerService {
 		customer.setBirthdate(birthdate);
 
 		CustomerAccountDto dto = toDto(customerAccount);
-		outboxService.save(EventType.PROFILE_UPDATED, AggregateType.CUSTOMER, customer.getId(),
+		notificationsOutboxService.save(EventType.PROFILE_UPDATED.name(), AggregateType.CUSTOMER.name(), customer.getId(),
 				customer.getUuid(), toDto(customer));
 
 		return dto;

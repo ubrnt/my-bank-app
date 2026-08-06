@@ -21,9 +21,10 @@ spring:
             token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
 
 mybank:
-  outbox:
-    enabled: false
-    poll-interval: 5s
-    batch-size: 20
-    stale-timeout: 5m
-    max-attempts: 5
+  notifications:
+    outbox:
+      enabled: false
+      poll-interval: 5s
+      batch-size: 20
+      stale-timeout: 5m
+      max-attempts: 5
