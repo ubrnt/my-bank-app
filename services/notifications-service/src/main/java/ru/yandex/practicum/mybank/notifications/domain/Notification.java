@@ -8,6 +8,8 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import ru.yandex.practicum.mybank.persistence.BaseEntity;
+
 import java.util.UUID;
 
 @Entity

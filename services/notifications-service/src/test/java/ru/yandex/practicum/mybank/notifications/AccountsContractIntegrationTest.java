@@ -83,7 +83,7 @@ class AccountsContractIntegrationTest {
 		@Bean
 		@Primary
 		public OAuth2AuthorizedClientManager fakeAuthorizedClientManager(ClientRegistrationRepository registrations) {
-			ClientRegistration registration = registrations.findByRegistrationId("accounts");
+			ClientRegistration registration = registrations.findByRegistrationId("accounts-service");
 			OAuth2AccessToken token = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER,
 					"fake-token", Instant.now(), Instant.now().plusSeconds(3600));
 

@@ -7,7 +7,6 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import ru.yandex.practicum.mybank.notifications.PostgresContainerConfig;
-import ru.yandex.practicum.mybank.notifications.config.JpaConfig;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.domain.Notification;
 import tools.jackson.databind.json.JsonMapper;
@@ -19,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({PostgresContainerConfig.class, JpaConfig.class})
+@Import(PostgresContainerConfig.class)
 class NotificationRepositoryTest {
 
 	private static final UUID EVENT_UUID = UUID.fromString("1b7f4a90-0d51-4c2e-9f77-0a1e5c3b0001");
