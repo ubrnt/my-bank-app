@@ -272,7 +272,8 @@
         "profile"
       ],
       "optionalClientScopes": [
-        "transactions:write"
+        "transactions:write",
+        "notifications:write"
       ]
     },
     {

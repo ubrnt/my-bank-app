@@ -12,6 +12,12 @@ spring:
             client-secret: ${TRANSFER_SERVICE_SECRET:transfer-service-secret}
             authorization-grant-type: client_credentials
             scope: transactions:write
+          notifications-service:
+            provider: keycloak
+            client-id: transfer-service
+            client-secret: ${TRANSFER_SERVICE_SECRET:transfer-service-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications:write
   jpa:
     open-in-view: false
     hibernate:
@@ -22,8 +28,18 @@ spring:
   liquibase:
     default-schema: transfer
 
+mybank:
+  notifications:
+    outbox:
+      poll-interval: 5s
+      batch-size: 20
+      stale-timeout: 5m
+      max-attempts: 5
+
 resilience4j:
   circuitbreaker:
     instances:
       accounts-service:
+        base-config: default
+      notifications-service:
         base-config: default
