@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record TransactionResponse(
 		UUID uuid,
+		String type,
 		TransactionOperation operation
 ) {
 }
