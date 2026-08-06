@@ -39,7 +39,7 @@ subprojects {
 
 	tasks.register('resolveDependencies') {
 		doLast {
-			configurations.matching { it.canBeResolved }.each { it.resolve() }
+			configurations.runtimeClasspath.resolve()
 		}
 	}
 }

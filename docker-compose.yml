@@ -1,0 +1,62 @@
+name: my-bank
+
+include:
+  - infra/docker-compose.yml
+
+x-service: &service
+  env_file:
+    - docker-profile.env
+  depends_on:
+    postgres:
+      condition: service_healthy
+    consul:
+      condition: service_healthy
+    keycloak:
+      condition: service_healthy
+    consul-kv-init:
+      condition: service_completed_successfully
+
+services:
+  accounts-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/accounts-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      ACCOUNTS_DB_PASSWORD: ${ACCOUNTS_DB_PASSWORD:-accounts}
+      ACCOUNTS_SERVICE_SECRET: ${ACCOUNTS_SERVICE_SECRET:-accounts-service-secret}
+
+  notifications-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/notifications-service/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      NOTIFICATIONS_DB_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-notifications}
+      NOTIFICATIONS_SERVICE_SECRET: ${NOTIFICATIONS_SERVICE_SECRET:-notifications-service-secret}
+
+  cash-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/cash-service/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      CASH_DB_PASSWORD: ${CASH_DB_PASSWORD:-cash}
+      CASH_SERVICE_SECRET: ${CASH_SERVICE_SECRET:-cash-service-secret}
+
+  transfer-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/transfer-service/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      TRANSFER_DB_PASSWORD: ${TRANSFER_DB_PASSWORD:-transfer}
+      TRANSFER_SERVICE_SECRET: ${TRANSFER_SERVICE_SECRET:-transfer-service-secret}

@@ -17,3 +17,5 @@ project(':front-service').projectDir = file('services/front-service')
 project(':bank-persistence-starter').projectDir = file('libs/bank-persistence-starter')
 project(':bank-chassis').projectDir = file('libs/bank-chassis')
 project(':bank-notifications-outbox-starter').projectDir = file('libs/bank-notifications-outbox-starter')
+
+rootProject.children*.projectDir*.mkdirs()
