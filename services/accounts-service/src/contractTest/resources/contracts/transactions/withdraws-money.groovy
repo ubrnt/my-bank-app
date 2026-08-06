@@ -25,13 +25,15 @@ Contract.make {
 		body(
 				uuid: fromRequest().body('$.transactionUuid'),
 				type: "withdraw",
-				operation: [
-						direction: "withdraw",
-						fromNumber: "40817810000000000001",
-						fromAccountUuid: "11111111-1111-1111-1111-111111111111",
-						fromCustomerUuid: "aaaaaaaa-1111-1111-1111-111111111111",
-						amount: 500,
-						balanceAfter: 24500
+				operations: [
+						[
+								direction: "withdraw",
+								fromNumber: "40817810000000000001",
+								fromAccountUuid: "11111111-1111-1111-1111-111111111111",
+								fromCustomerUuid: "aaaaaaaa-1111-1111-1111-111111111111",
+								amount: 500,
+								balanceAfter: 24500
+						]
 				]
 		)
 	}

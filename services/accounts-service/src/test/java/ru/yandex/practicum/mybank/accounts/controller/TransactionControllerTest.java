@@ -14,6 +14,7 @@ import ru.yandex.practicum.mybank.accounts.service.TransactionsService;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -97,8 +98,8 @@ class TransactionControllerTest {
 
 	private TransactionDto deposit() {
 		return new TransactionDto(TRANSACTION_UUID, TransactionType.DEPOSIT,
-				new OperationDto(OperationDirection.DEPOSIT, null, null, null,
+				List.of(new OperationDto(OperationDirection.DEPOSIT, null, null, null,
 						"40817810000000000001", ACCOUNT_UUID, CUSTOMER_UUID,
-						5000, 105000));
+						5000, 105000)));
 	}
 }

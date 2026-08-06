@@ -25,13 +25,15 @@ Contract.make {
 		body(
 				uuid: fromRequest().body('$.transactionUuid'),
 				type: "deposit",
-				operation: [
-						direction: "deposit",
-						toNumber: "40817810000000000001",
-						toAccountUuid: "11111111-1111-1111-1111-111111111111",
-						toCustomerUuid: "aaaaaaaa-1111-1111-1111-111111111111",
-						amount: 500,
-						balanceAfter: 25500
+				operations: [
+						[
+								direction: "deposit",
+								toNumber: "40817810000000000001",
+								toAccountUuid: "11111111-1111-1111-1111-111111111111",
+								toCustomerUuid: "aaaaaaaa-1111-1111-1111-111111111111",
+								amount: 500,
+								balanceAfter: 25500
+						]
 				]
 		)
 	}

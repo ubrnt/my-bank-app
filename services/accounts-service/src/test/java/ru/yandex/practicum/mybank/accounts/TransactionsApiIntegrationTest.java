@@ -20,7 +20,8 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 						.content(deposit(TRANSACTION_UUID, 5000)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uuid").value(TRANSACTION_UUID))
-				.andExpect(jsonPath("$.operation.balanceAfter").value(INITIAL_BALANCE + 5000));
+				.andExpect(jsonPath("$.operations.length()").value(1))
+				.andExpect(jsonPath("$.operations[0].balanceAfter").value(INITIAL_BALANCE + 5000));
 
 		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE + 5000);
 		assertThat(countOf("transactions")).isEqualTo(1);

@@ -18,6 +18,7 @@ import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,21 +45,25 @@ public abstract class ContractsBase {
 		TransactionsService transactionsService = mock(TransactionsService.class);
 		when(transactionsService.deposit(any(), any(), anyLong())).thenAnswer(invocation ->
 				new TransactionDto(invocation.getArgument(0), TransactionType.DEPOSIT,
-						new OperationDto(OperationDirection.DEPOSIT, null, null, null,
+						List.of(new OperationDto(OperationDirection.DEPOSIT, null, null, null,
 								USER1_NUMBER, USER1_ACCOUNT_UUID, USER1_CUSTOMER_UUID,
-								invocation.getArgument(2), 25500)));
+								invocation.getArgument(2), 25500))));
 		when(transactionsService.withdraw(any(), any(), anyLong())).thenAnswer(invocation ->
 				new TransactionDto(invocation.getArgument(0), TransactionType.WITHDRAW,
-						new OperationDto(OperationDirection.WITHDRAW,
+						List.of(new OperationDto(OperationDirection.WITHDRAW,
 								USER1_NUMBER, USER1_ACCOUNT_UUID, USER1_CUSTOMER_UUID,
 								null, null, null,
-								invocation.getArgument(2), 24500)));
+								invocation.getArgument(2), 24500))));
 		when(transactionsService.transfer(any(), any(), any(), anyLong())).thenAnswer(invocation ->
 				new TransactionDto(invocation.getArgument(0), TransactionType.TRANSFER,
-						new OperationDto(OperationDirection.WITHDRAW,
-								USER1_NUMBER, USER1_ACCOUNT_UUID, USER1_CUSTOMER_UUID,
-								USER2_NUMBER, USER2_ACCOUNT_UUID, USER2_CUSTOMER_UUID,
-								invocation.getArgument(3), 24500)));
+						List.of(new OperationDto(OperationDirection.WITHDRAW,
+										USER1_NUMBER, USER1_ACCOUNT_UUID, USER1_CUSTOMER_UUID,
+										USER2_NUMBER, USER2_ACCOUNT_UUID, USER2_CUSTOMER_UUID,
+										invocation.getArgument(3), 24500),
+								new OperationDto(OperationDirection.DEPOSIT,
+										USER1_NUMBER, USER1_ACCOUNT_UUID, USER1_CUSTOMER_UUID,
+										USER2_NUMBER, USER2_ACCOUNT_UUID, USER2_CUSTOMER_UUID,
+										invocation.getArgument(3), 5500))));
 		doThrow(new TransactionConflictException(CONFLICTING_TRANSACTION_UUID))
 				.when(transactionsService).deposit(eq(CONFLICTING_TRANSACTION_UUID), any(), anyLong());
 		doThrow(new InsufficientFundsException("user1", 1_000_000_000_000L, 25000))

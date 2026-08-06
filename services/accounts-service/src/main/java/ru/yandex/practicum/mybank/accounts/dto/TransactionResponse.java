@@ -3,12 +3,13 @@ package ru.yandex.practicum.mybank.accounts.dto;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
+import java.util.List;
 import java.util.UUID;
 
 public record TransactionResponse(
 		UUID uuid,
 		String type,
-		Operation operation
+		List<Operation> operations
 ) {
 
 	//todo ubrnt, think whether we need to have dto's at all
@@ -16,7 +17,9 @@ public record TransactionResponse(
 		return new TransactionResponse(
 				transaction.uuid(),
 				transaction.type().name().toLowerCase(),
-				Operation.of(transaction.operation()));
+				transaction.operations().stream()
+						.map(Operation::of)
+						.toList());
 	}
 
 	public record Operation(

@@ -162,22 +162,18 @@ public class TransactionsService {
 			case WITHDRAW -> OperationDto.withdrawal(account, amount, balanceAfter);
 		};
 
-		return new TransactionDto(transaction.getUuid(), transaction.getType(), cash);
+		return new TransactionDto(transaction.getUuid(), transaction.getType(), List.of(cash));
 	}
 
-	private TransactionDto toTransferDto(Transaction transaction, BalanceOperation ownOperation, BalanceOperation otherOperation) {
-		Account ownAccount = ownOperation.getAccount();
-		Account otherAccount = otherOperation.getAccount();
+	private TransactionDto toTransferDto(Transaction transaction, BalanceOperation withdrawal, BalanceOperation deposit) {
+		Account from = withdrawal.getAccount();
+		Account to = deposit.getAccount();
+		long amount = withdrawal.getAmount();
 
-		long amount = ownOperation.getAmount();
-		long balanceAfter = ownOperation.getBalanceAfter();
+		OperationDto sent = OperationDto.sent(from, to, amount, withdrawal.getBalanceAfter());
+		OperationDto received = OperationDto.received(from, to, amount, deposit.getBalanceAfter());
 
-		OperationDto operation = switch (ownOperation.getDirection()) {
-			case WITHDRAW -> OperationDto.sent(ownAccount, otherAccount, amount, balanceAfter);
-			case DEPOSIT -> OperationDto.received(otherAccount, ownAccount, amount, balanceAfter);
-		};
-
-		return new TransactionDto(transaction.getUuid(), transaction.getType(), operation);
+		return new TransactionDto(transaction.getUuid(), transaction.getType(), List.of(sent, received));
 	}
 
 	private record TransactionClaim(Transaction transaction, boolean acquired) {
