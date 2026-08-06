@@ -101,6 +101,15 @@
       }
     },
     {
+      "name": "cash:write",
+      "description": "Deposit and withdraw cash",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
       "name": "notifications:write",
       "description": "Send notifications",
       "protocol": "openid-connect",
@@ -259,7 +268,8 @@
       "optionalClientScopes": [
         "customer:read",
         "customer:write",
-        "customer:others:read"
+        "customer:others:read",
+        "cash:write"
       ]
     }
   ],
