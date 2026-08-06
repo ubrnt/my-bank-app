@@ -2,12 +2,16 @@ rootProject.name = 'my-bank-app'
 
 include 'accounts-service'
 include 'notifications-service'
+include 'cash-service'
 include 'front-service'
 include 'bank-persistence-starter'
 include 'bank-chassis'
+include 'bank-outbox-starter'
 
 project(':accounts-service').projectDir = file('services/accounts-service')
 project(':notifications-service').projectDir = file('services/notifications-service')
+project(':cash-service').projectDir = file('services/cash-service')
 project(':front-service').projectDir = file('services/front-service')
 project(':bank-persistence-starter').projectDir = file('libs/bank-persistence-starter')
 project(':bank-chassis').projectDir = file('libs/bank-chassis')
+project(':bank-outbox-starter').projectDir = file('libs/bank-outbox-starter')
