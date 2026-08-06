@@ -8,6 +8,7 @@ import ru.yandex.practicum.mybank.cash.domain.CashOperation;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationType;
 import ru.yandex.practicum.mybank.cash.domain.EventType;
 import ru.yandex.practicum.mybank.cash.repository.CashOperationRepository;
+import ru.yandex.practicum.mybank.cash.service.dto.MoneyEventPayloadDto;
 import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxService;
 
 import java.util.UUID;
@@ -36,7 +37,7 @@ public class CashOperationJournal {
 		operation.complete(accountUuid, customerUuid);
 
 		notificationsOutboxService.save(eventType.name(), AggregateType.CASH_OPERATION.name(),
-				operation.getId(), customerUuid, transaction);
+				operation.getId(), customerUuid, MoneyEventPayloadDto.of(transaction));
 
 		return operation;
 	}

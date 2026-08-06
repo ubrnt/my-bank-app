@@ -18,6 +18,7 @@ import ru.yandex.practicum.mybank.cash.service.AccountsServiceUnavailableExcepti
 import ru.yandex.practicum.mybank.cash.service.CashService;
 import ru.yandex.practicum.mybank.chassis.client.ServiceCallException;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -114,6 +115,6 @@ class CashOrchestrationIntegrationTest {
 					"40817810000000000001", ACCOUNT_UUID, CUSTOMER_UUID, request.amount(), 24500L);
 		};
 
-		return new TransactionResponse(request.transactionUuid(), type, operation);
+		return new TransactionResponse(request.transactionUuid(), type, List.of(operation));
 	}
 }
