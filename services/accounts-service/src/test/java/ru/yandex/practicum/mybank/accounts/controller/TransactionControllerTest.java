@@ -74,12 +74,13 @@ class TransactionControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uuid").value(TRANSACTION_UUID.toString()))
 				.andExpect(jsonPath("$.type").value("deposit"))
-				.andExpect(jsonPath("$.operation.direction").value("deposit"))
-				.andExpect(jsonPath("$.operation.toNumber").value("40817810000000000001"))
-				.andExpect(jsonPath("$.operation.balanceAfter").value(105000))
-				.andExpect(jsonPath("$.operation.toAccountUuid").value(ACCOUNT_UUID.toString()))
-				.andExpect(jsonPath("$.operation.toCustomerUuid").value(CUSTOMER_UUID.toString()))
-				.andExpect(jsonPath("$.operation.fromAccountUuid").doesNotExist());
+				.andExpect(jsonPath("$.operations.length()").value(1))
+				.andExpect(jsonPath("$.operations[0].direction").value("deposit"))
+				.andExpect(jsonPath("$.operations[0].toNumber").value("40817810000000000001"))
+				.andExpect(jsonPath("$.operations[0].balanceAfter").value(105000))
+				.andExpect(jsonPath("$.operations[0].toAccountUuid").value(ACCOUNT_UUID.toString()))
+				.andExpect(jsonPath("$.operations[0].toCustomerUuid").value(CUSTOMER_UUID.toString()))
+				.andExpect(jsonPath("$.operations[0].fromAccountUuid").doesNotExist());
 	}
 
 	@Test

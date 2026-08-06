@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -78,11 +81,14 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 								{"transactionUuid": "%s", "fromLogin": "user1", "toLogin": "user2", "amount": 3000}
 								""".formatted(TRANSACTION_UUID)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.operation.direction").value("withdraw"))
-				.andExpect(jsonPath("$.operation.fromAccountUuid").isNotEmpty())
-				.andExpect(jsonPath("$.operation.fromCustomerUuid").isNotEmpty())
-				.andExpect(jsonPath("$.operation.toAccountUuid").isNotEmpty())
-				.andExpect(jsonPath("$.operation.toCustomerUuid").isNotEmpty());
+				.andExpect(jsonPath("$.operations.length()").value(2))
+				.andExpect(jsonPath("$.operations[*].direction", containsInAnyOrder("withdraw", "deposit")))
+				.andExpect(jsonPath("$.operations[*].balanceAfter", containsInAnyOrder(
+						(int) (INITIAL_BALANCE - 3000), (int) (INITIAL_BALANCE + 3000))))
+				.andExpect(jsonPath("$.operations[*].fromAccountUuid", contains(notNullValue(), notNullValue())))
+				.andExpect(jsonPath("$.operations[*].fromCustomerUuid", contains(notNullValue(), notNullValue())))
+				.andExpect(jsonPath("$.operations[*].toAccountUuid", contains(notNullValue(), notNullValue())))
+				.andExpect(jsonPath("$.operations[*].toCustomerUuid", contains(notNullValue(), notNullValue())));
 
 		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE - 3000);
 		assertThat(balanceOf("user2")).isEqualTo(INITIAL_BALANCE + 3000);
