@@ -42,9 +42,13 @@ class AccountsContractIntegrationTest {
 				new TransactionRequest(transactionUuid, "user1", "user2", 500));
 
 		assertThat(response.uuid()).isEqualTo(transactionUuid);
-		assertThat(response.operation().fromAccountUuid()).isEqualTo(FROM_ACCOUNT_UUID);
-		assertThat(response.operation().fromCustomerUuid()).isEqualTo(FROM_CUSTOMER_UUID);
-		assertThat(response.operation().toAccountUuid()).isEqualTo(TO_ACCOUNT_UUID);
-		assertThat(response.operation().toCustomerUuid()).isEqualTo(TO_CUSTOMER_UUID);
+		assertThat(response.operations()).hasSize(2);
+
+		assertThat(response.sent().fromAccountUuid()).isEqualTo(FROM_ACCOUNT_UUID);
+		assertThat(response.sent().fromCustomerUuid()).isEqualTo(FROM_CUSTOMER_UUID);
+		assertThat(response.sent().toAccountUuid()).isEqualTo(TO_ACCOUNT_UUID);
+		assertThat(response.sent().toCustomerUuid()).isEqualTo(TO_CUSTOMER_UUID);
+
+		assertThat(response.received().balanceAfter()).isNotEqualTo(response.sent().balanceAfter());
 	}
 }
