@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    username: cash_service
+    password: ${CASH_DB_PASSWORD:cash}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: cash
+  liquibase:
+    default-schema: cash
