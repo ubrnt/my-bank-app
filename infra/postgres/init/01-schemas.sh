@@ -12,4 +12,8 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 	CREATE USER cash_service WITH PASSWORD '${CASH_DB_PASSWORD}';
 	CREATE SCHEMA cash AUTHORIZATION cash_service;
 	ALTER ROLE cash_service SET search_path = cash;
+
+	CREATE USER transfer_service WITH PASSWORD '${TRANSFER_DB_PASSWORD}';
+	CREATE SCHEMA transfer AUTHORIZATION transfer_service;
+	ALTER ROLE transfer_service SET search_path = transfer;
 EOSQL

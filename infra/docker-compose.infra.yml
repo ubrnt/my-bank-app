@@ -10,6 +10,7 @@ services:
       ACCOUNTS_DB_PASSWORD: ${ACCOUNTS_DB_PASSWORD:-accounts}
       NOTIFICATIONS_DB_PASSWORD: ${NOTIFICATIONS_DB_PASSWORD:-notifications}
       CASH_DB_PASSWORD: ${CASH_DB_PASSWORD:-cash}
+      TRANSFER_DB_PASSWORD: ${TRANSFER_DB_PASSWORD:-transfer}
     ports:
       - "5432:5432"
     volumes:

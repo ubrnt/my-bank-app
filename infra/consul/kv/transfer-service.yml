@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    username: transfer_service
+    password: ${TRANSFER_DB_PASSWORD:transfer}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: transfer
+  liquibase:
+    default-schema: transfer

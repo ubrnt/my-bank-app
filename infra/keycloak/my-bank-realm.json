@@ -110,6 +110,15 @@
       }
     },
     {
+      "name": "transfer:write",
+      "description": "Transfer money between accounts",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
       "name": "notifications:write",
       "description": "Send notifications",
       "protocol": "openid-connect",
@@ -270,7 +279,8 @@
         "customer:read",
         "customer:write",
         "customer:others:read",
-        "cash:write"
+        "cash:write",
+        "transfer:write"
       ]
     }
   ],
