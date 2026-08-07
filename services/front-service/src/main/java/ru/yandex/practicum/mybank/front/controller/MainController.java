@@ -1,15 +1,24 @@
 package ru.yandex.practicum.mybank.front.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import ru.yandex.practicum.mybank.front.client.GatewayClient;
+import ru.yandex.practicum.mybank.front.client.GatewayException;
+import ru.yandex.practicum.mybank.front.client.dto.CashRequest;
+import ru.yandex.practicum.mybank.front.client.dto.CustomerResponse;
+import ru.yandex.practicum.mybank.front.client.dto.TransferRequest;
+import ru.yandex.practicum.mybank.front.client.dto.UpdateProfileRequest;
+import ru.yandex.practicum.mybank.front.controller.dto.AccountDto;
 import ru.yandex.practicum.mybank.front.controller.dto.CashAction;
-import ru.yandex.practicum.mybank.front.controller.stub.AccountStub;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Контроллер main.html.
@@ -34,101 +43,102 @@ import java.time.LocalDate;
  */
 @Controller
 public class MainController {
-    // TODO: Удалить заглушку, так как используется только для ознакомительных целей
-    @Autowired
-    private AccountStub accountStub;
 
-    /**
-     * GET /.
-     * Редирект на GET /account
-     */
-    @GetMapping
-    public String index() {
-        return "redirect:/account";
-    }
+	private final GatewayClient gatewayClient;
 
-    /**
-     * GET /account.
-     * Что нужно сделать:
-     * 1. Сходить в сервис accounts через Gateway API для получения данных аккаунта по REST
-     * 2. Заполнить модель main.html полученными из ответа данными
-     * 3. Текущего пользователя можно получить из контекста Security
-     */
-    @GetMapping("/account")
-    public String getAccount(Model model) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.fillModel(model, null, null);
+	private final MessageRenderer messages;
 
-        return "main";
-    }
+	public MainController(GatewayClient gatewayClient, MessageRenderer messages) {
+		this.gatewayClient = gatewayClient;
+		this.messages = messages;
+	}
 
-    /**
-     * POST /account.
-     * Что нужно сделать:
-     * 1. Сходить в сервис accounts через Gateway API для изменения данных текущего пользователя по REST
-     * 2. Заполнить модель main.html полученными из ответа данными
-     * 3. Текущего пользователя можно получить из контекста Security
-     *
-     * Изменяемые данные:
-     * 1. name - Фамилия Имя
-     * 2. birthdate - дата рождения в формате YYYY-DD-MM
-     */
-    @PostMapping("/account")
-    public String editAccount(
-            Model model,
-            @RequestParam("name") String name,
-            @RequestParam("birthdate") LocalDate birthdate
-    ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.setNameAndBirthdate(name, birthdate);
-        accountStub.fillModel(model, null, null);
+	@GetMapping
+	public String index() {
+		return "redirect:/account";
+	}
 
-        return "main";
-    }
+	@GetMapping("/account")
+	public String getAccount(Model model) {
+		fillModel(model, List.of(), null);
 
-    /**
-     * POST /cash.
-     * Что нужно сделать:
-     * 1. Сходить в сервис cash через Gateway API для снятия/пополнения счета текущего аккаунта по REST
-     * 2. Заполнить модель main.html полученными из ответа данными
-     * 3. Текущего пользователя можно получить из контекста Security
-     *
-     * Параметры:
-     * 1. value - сумма списания
-     * 2. action - GET (снять), PUT (пополнить)
-     */
-    @PostMapping("/cash")
-    public String editCash(
-            Model model,
-            @RequestParam("value") int value,
-            @RequestParam("action") CashAction action
-            ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.editCash(model, value, action);
+		return "main";
+	}
 
-        return "main";
-    }
+	@PostMapping("/account")
+	public String editAccount(
+			Model model,
+			@RequestParam("name") String name,
+			@RequestParam("birthdate") LocalDate birthdate
+	) {
+		gatewayClient.updateCustomer(new UpdateProfileRequest(name, birthdate));
+		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"));
 
-    /**
-     * POST /transfer.
-     * Что нужно сделать:
-     * 1. Сходить в сервис accounts через Gateway API для перевода со счета текущего аккаунта на счет другого аккаунта по REST
-     * 2. Заполнить модель main.html полученными из ответа данными
-     * 3. Текущего пользователя можно получить из контекста Security
-     *
-     * Параметры:
-     * 1. value - сумма списания
-     * 2. login - логин пользователя получателя
-     */
-    @PostMapping("/transfer")
-    public String transfer(
-            Model model,
-            @RequestParam("value") int value,
-            @RequestParam("login") String login
-    ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.transfer(model, value, login);
+		return "main";
+	}
 
-        return "main";
-    }
+	@PostMapping("/cash")
+	public String editCash(
+			Model model,
+			@RequestParam("value") long value,
+			@RequestParam("action") CashAction action
+	) {
+		String info = action == CashAction.PUT ? deposit(value) : withdraw(value);
+		fillModel(model, List.of(), info);
+
+		return "main";
+	}
+
+	@PostMapping("/transfer")
+	public String transfer(
+			Model model,
+			@RequestParam("value") long value,
+			@RequestParam("login") String login
+	) {
+		gatewayClient.transfer(new TransferRequest(login, value));
+		fillModel(model, List.of(), messages.infoMessage("info.transferred", value, login));
+
+		return "main";
+	}
+
+	@ExceptionHandler(GatewayException.class)
+	public String handleGatewayFailure(GatewayException exception, Model model) {
+		fillModel(model, messages.errorMessages(exception), null);
+
+		return "main";
+	}
+
+	private String deposit(long value) {
+		gatewayClient.deposit(new CashRequest(value));
+
+		return messages.infoMessage("info.deposited", value);
+	}
+
+	private String withdraw(long value) {
+		gatewayClient.withdraw(new CashRequest(value));
+
+		return messages.infoMessage("info.withdrawn", value);
+	}
+
+	private void fillModel(Model model, List<String> errors, String info) {
+		List<String> allErrors = new ArrayList<>(errors);
+
+		try {
+			CustomerResponse customer = gatewayClient.getCustomer();
+
+			List<AccountDto> accounts = gatewayClient.getOtherCustomers().stream()
+					.map(other -> new AccountDto(other.login(), other.name()))
+					.toList();
+
+			model.addAttribute("name", customer.name());
+			model.addAttribute("birthdate", customer.birthdate().format(DateTimeFormatter.ISO_DATE));
+			model.addAttribute("sum", customer.balance());
+			model.addAttribute("accounts", accounts);
+		} catch (GatewayException exception) {
+			allErrors.addAll(messages.errorMessages(exception));
+		}
+
+		model.addAttribute("errors", allErrors.isEmpty() ? null : allErrors);
+		model.addAttribute("info", info);
+	}
 }
