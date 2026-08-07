@@ -1,0 +1,11 @@
+spring:
+  cloud:
+    consul:
+      discovery:
+        enabled: false
+    discovery:
+      client:
+        simple:
+          instances:
+            gateway-service:
+              - uri: http://localhost:8081
