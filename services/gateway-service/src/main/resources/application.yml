@@ -13,7 +13,7 @@ spring:
         format: YAML
         profile-separator: /
         watch:
-          enabled: false
+          wait-time: 3
       discovery:
         prefer-ip-address: true
 
