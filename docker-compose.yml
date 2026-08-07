@@ -17,6 +17,16 @@ x-service: &service
       condition: service_completed_successfully
 
 services:
+  front-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/front-service/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      FRONT_SERVICE_SECRET: ${FRONT_SERVICE_SECRET:-front-service-secret}
+
   gateway-service:
     <<: *service
     build:
