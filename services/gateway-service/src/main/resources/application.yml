@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: gateway-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import: "consul:"
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      config:
+        format: YAML
+        profile-separator: /
+        watch:
+          enabled: false
+      discovery:
+        prefer-ip-address: true
+
+server:
+  port: 8081

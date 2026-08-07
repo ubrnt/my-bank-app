@@ -17,6 +17,14 @@ x-service: &service
       condition: service_completed_successfully
 
 services:
+  gateway-service:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/gateway-service/Dockerfile
+    ports:
+      - "8081:8081"
+
   accounts-service:
     <<: *service
     build:
