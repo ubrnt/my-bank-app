@@ -12,6 +12,8 @@ spring:
       config:
         format: YAML
         profile-separator: /
+        watch:
+          enabled: false
       discovery:
         prefer-ip-address: true
 
