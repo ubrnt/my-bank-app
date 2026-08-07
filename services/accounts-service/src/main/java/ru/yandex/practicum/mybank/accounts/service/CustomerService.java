@@ -57,7 +57,7 @@ public class CustomerService {
 		customer.setBirthdate(birthdate);
 
 		CustomerAccountDto dto = toDto(customerAccount);
-		notificationsOutboxService.save(EventType.PROFILE_UPDATED.name(), AggregateType.CUSTOMER.name(), customer.getId(),
+		notificationsOutboxService.save(EventType.CUSTOMER_UPDATED.name(), AggregateType.CUSTOMER.name(), customer.getId(),
 				customer.getUuid(), toDto(customer));
 
 		return dto;

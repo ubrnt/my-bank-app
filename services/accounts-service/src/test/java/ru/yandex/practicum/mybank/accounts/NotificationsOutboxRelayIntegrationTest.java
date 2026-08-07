@@ -56,7 +56,7 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
 		NotificationRequest sent = captor.getValue();
 		assertThat(sent.eventUuid()).isEqualTo(eventUuid);
-		assertThat(sent.type()).isEqualTo(EventType.PROFILE_UPDATED.name().toLowerCase(Locale.ROOT));
+		assertThat(sent.type()).isEqualTo(EventType.CUSTOMER_UPDATED.name().toLowerCase(Locale.ROOT));
 		assertThat(sent.recipientUuid()).isEqualTo(UUID.fromString(
 				jdbcTemplate.queryForObject("select uuid from customers where login = 'user1'", String.class)));
 		assertThat(sent.payload()).contains("user1_new_first_name user1_new_last_name");

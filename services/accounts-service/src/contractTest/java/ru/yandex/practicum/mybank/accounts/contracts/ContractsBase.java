@@ -2,6 +2,10 @@ package ru.yandex.practicum.mybank.accounts.contracts;
 
 import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import ru.yandex.practicum.mybank.accounts.controller.ApiExceptionHandler;
@@ -14,10 +18,12 @@ import ru.yandex.practicum.mybank.accounts.service.CustomerService;
 import ru.yandex.practicum.mybank.accounts.service.InsufficientFundsException;
 import ru.yandex.practicum.mybank.accounts.service.TransactionConflictException;
 import ru.yandex.practicum.mybank.accounts.service.TransactionsService;
+import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.OperationDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.TransactionDto;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,10 +76,20 @@ public abstract class ContractsBase {
 				.when(transactionsService).withdraw(any(), any(), eq(1_000_000_000_000L));
 
 		CustomerService customerService = mock(CustomerService.class);
+
+		when(customerService.getCustomerAccount("user1")).thenReturn(new CustomerAccountDto("user1",
+				"user1_first_name user1_last_name", LocalDate.of(1990, 1, 15), USER1_NUMBER, 25000));
+		when(customerService.findOthers("user1")).thenReturn(List.of(
+				new CustomerDto(USER2_CUSTOMER_UUID, "user2", "user2_first_name user2_last_name")));
 		when(customerService.getCustomer(any())).thenAnswer(invocation ->
 				new CustomerDto(invocation.getArgument(0), "user1", "user1_first_name user1_last_name"));
 		doThrow(new CustomerAccountNotFoundException(UNKNOWN_CUSTOMER_UUID))
 				.when(customerService).getCustomer(UNKNOWN_CUSTOMER_UUID);
+
+		SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
+				.header("alg", "none")
+				.claim("preferred_username", "user1")
+				.build()));
 
 		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();
 		validator.afterPropertiesSet();
@@ -82,6 +98,7 @@ public abstract class ContractsBase {
 				.standaloneSetup(
 						new TransactionController(transactionsService),
 						new CustomerController(customerService))
+				.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
 				.setControllerAdvice(new ApiExceptionHandler())
 				.setValidator(validator));
 	}
