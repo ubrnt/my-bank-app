@@ -3,8 +3,6 @@ spring:
     name: gateway-service
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
-  config:
-    import: "consul:"
   cloud:
     consul:
       host: ${CONSUL_HOST:localhost}
@@ -13,9 +11,47 @@ spring:
         format: YAML
         profile-separator: /
         watch:
-          wait-time: 3
+          enabled: false
       discovery:
         prefer-ip-address: true
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: accounts-service
+              uri: lb://accounts-service
+              predicates:
+                - Path=/api/customers/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: accounts-service
+                    fallbackUri: forward:/fallback/accounts-service
+            - id: cash-service
+              uri: lb://cash-service
+              predicates:
+                - Path=/api/cash/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: cash-service
+                    fallbackUri: forward:/fallback/cash-service
+            - id: transfer-service
+              uri: lb://transfer-service
+              predicates:
+                - Path=/api/transfers/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: transfer-service
+                    fallbackUri: forward:/fallback/transfer-service
 
 server:
   port: 8081
+
+---
+spring:
+  config:
+    activate:
+      on-profile: "!test"
+    import: "consul:"
