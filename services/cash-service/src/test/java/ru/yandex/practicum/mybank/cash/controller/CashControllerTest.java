@@ -69,8 +69,8 @@ class CashControllerTest {
 								"""))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uuid").value(OPERATION_UUID.toString()))
-				.andExpect(jsonPath("$.type").value("DEPOSIT"))
-				.andExpect(jsonPath("$.status").value("COMPLETED"));
+				.andExpect(jsonPath("$.type").value("deposit"))
+				.andExpect(jsonPath("$.status").value("completed"));
 	}
 
 	@Test
