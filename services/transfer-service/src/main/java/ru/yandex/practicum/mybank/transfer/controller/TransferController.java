@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.mybank.transfer.dto.TransferRequest;
 import ru.yandex.practicum.mybank.transfer.service.TransferService;
-import ru.yandex.practicum.mybank.transfer.service.dto.TransferOperationDto;
+import ru.yandex.practicum.mybank.transfer.dto.TransferOperationResponse;
 
 @RestController
 @RequestMapping("/api/transfers")
@@ -22,9 +22,9 @@ public class TransferController {
 	}
 
 	@PostMapping
-	public TransferOperationDto transfer(@Valid @RequestBody TransferRequest request,
+	public TransferOperationResponse transfer(@Valid @RequestBody TransferRequest request,
 			@AuthenticationPrincipal Jwt jwt) {
-		return transferService.transfer(login(jwt), request.toLogin(), request.amount());
+		return TransferOperationResponse.of(transferService.transfer(login(jwt), request.toLogin(), request.amount()));
 	}
 
 	private String login(Jwt jwt) {

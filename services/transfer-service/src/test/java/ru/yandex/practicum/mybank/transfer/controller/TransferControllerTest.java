@@ -66,7 +66,7 @@ class TransferControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uuid").value(OPERATION_UUID.toString()))
 				.andExpect(jsonPath("$.amount").value(500))
-				.andExpect(jsonPath("$.status").value("COMPLETED"));
+				.andExpect(jsonPath("$.status").value("completed"));
 	}
 
 	@Test
