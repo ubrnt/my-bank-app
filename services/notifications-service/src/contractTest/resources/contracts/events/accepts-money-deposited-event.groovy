@@ -4,6 +4,7 @@ import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {
 	description "accepts MONEY_DEPOSITED event: operation carries the credited account and the new balance"
+	priority 1
 	request {
 		method POST()
 		url "/api/notifications"
@@ -15,11 +16,11 @@ Contract.make {
 				type: "money_deposited",
 				recipientUuid: $(anyUuid()),
 				payload: [
-						uuid     : $(anyUuid()),
+						transactionUuid: $(anyUuid()),
 						operation: [
 								toNumber    : $(regex('[0-9]{20}')),
-								amount      : $(anyPositiveInt()),
-								balanceAfter: $(anyPositiveInt())
+								amount      : 500,
+								balanceAfter: 25500
 						]
 				]
 		)

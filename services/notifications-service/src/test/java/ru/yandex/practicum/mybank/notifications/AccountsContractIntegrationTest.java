@@ -61,7 +61,7 @@ class AccountsContractIntegrationTest {
 
 	@Test
 	void resolvesRecipientAgainstAccountsContractAndSavesNotification() {
-		notificationsService.receive(EVENT_UUID, EventType.PROFILE_UPDATED, RECIPIENT_UUID, payload);
+		notificationsService.receive(EVENT_UUID, EventType.CUSTOMER_UPDATED, RECIPIENT_UUID, payload);
 
 		String message = jdbcTemplate.queryForObject("select message from notifications", String.class);
 		assertThat(message).isEqualTo("Данные профиля обновлены. Если это были не вы, обратитесь в банк");
@@ -70,7 +70,7 @@ class AccountsContractIntegrationTest {
 	@Test
 	void failsToResolveRecipientUnknownToAccounts() {
 		assertThatThrownBy(() ->
-				notificationsService.receive(EVENT_UUID, EventType.PROFILE_UPDATED, UNKNOWN_RECIPIENT_UUID, payload))
+				notificationsService.receive(EVENT_UUID, EventType.CUSTOMER_UPDATED, UNKNOWN_RECIPIENT_UUID, payload))
 				.isInstanceOf(CustomerResolutionException.class);
 
 		Long count = jdbcTemplate.queryForObject("select count(*) from notifications", Long.class);

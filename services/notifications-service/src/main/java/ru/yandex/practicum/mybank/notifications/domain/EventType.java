@@ -10,7 +10,7 @@ public enum EventType {
 	MONEY_WITHDRAWN,
 	MONEY_SENT,
 	MONEY_RECEIVED,
-	PROFILE_UPDATED;
+	CUSTOMER_UPDATED;
 
 	@JsonCreator
 	public static EventType of(String value) {

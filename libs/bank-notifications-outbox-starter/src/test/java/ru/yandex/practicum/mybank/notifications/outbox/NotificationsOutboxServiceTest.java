@@ -42,14 +42,14 @@ class NotificationsOutboxServiceTest {
 
 	@Test
 	void savesEvent() {
-		notificationsOutboxService.save("PROFILE_UPDATED", "CUSTOMER", 7L, CUSTOMER_UUID,
+		notificationsOutboxService.save("CUSTOMER_UPDATED", "CUSTOMER", 7L, CUSTOMER_UUID,
 				new CustomerPayload(CUSTOMER_UUID, "user1", "user1_first_name user1_last_name"));
 
 		ArgumentCaptor<NotificationsOutboxEvent> captor = ArgumentCaptor.forClass(NotificationsOutboxEvent.class);
 		verify(notificationsOutboxEventRepository).save(captor.capture());
 
 		NotificationsOutboxEvent saved = captor.getValue();
-		assertThat(saved.getEventType()).isEqualTo("PROFILE_UPDATED");
+		assertThat(saved.getEventType()).isEqualTo("CUSTOMER_UPDATED");
 		assertThat(saved.getAggregateType()).isEqualTo("CUSTOMER");
 		assertThat(saved.getAggregateId()).isEqualTo(7L);
 		assertThat(saved.getRecipientUuid()).isEqualTo(CUSTOMER_UUID);
@@ -92,7 +92,7 @@ class NotificationsOutboxServiceTest {
 	}
 
 	private NotificationsOutboxEvent eventWithFailedAttempts(int attempts) {
-		NotificationsOutboxEvent event = new NotificationsOutboxEvent("PROFILE_UPDATED", "CUSTOMER", 7L,
+		NotificationsOutboxEvent event = new NotificationsOutboxEvent("CUSTOMER_UPDATED", "CUSTOMER", 7L,
 				CUSTOMER_UUID, "{\"uuid\":\"cccc\"}");
 
 		for (int attempt = 0; attempt < attempts; attempt++) {

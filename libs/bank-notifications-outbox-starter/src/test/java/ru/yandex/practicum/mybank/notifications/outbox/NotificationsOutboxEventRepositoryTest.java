@@ -84,7 +84,7 @@ class NotificationsOutboxEventRepositoryTest {
 	}
 
 	private NotificationsOutboxEvent saveEvent() {
-		NotificationsOutboxEvent event = new NotificationsOutboxEvent("PROFILE_UPDATED", "CUSTOMER", 7L,
+		NotificationsOutboxEvent event = new NotificationsOutboxEvent("CUSTOMER_UPDATED", "CUSTOMER", 7L,
 				UUID.randomUUID(), "{\"uuid\":\"cccc0001-2222-4333-8444-555566660003\"}");
 		notificationsOutboxEventRepository.save(event);
 

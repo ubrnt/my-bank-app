@@ -57,7 +57,7 @@ class MessageRendererTest {
 				 "name": "user1_first_name user1_last_name"}
 				""");
 
-		assertThat(messageRenderer.render(EventType.PROFILE_UPDATED, payload))
+		assertThat(messageRenderer.render(EventType.CUSTOMER_UPDATED, payload))
 				.isEqualTo("Данные профиля обновлены. Если это были не вы, обратитесь в банк");
 	}
 

@@ -14,5 +14,5 @@ CREATE TABLE notifications (
     version       BIGINT      NOT NULL DEFAULT 0,
     CONSTRAINT uq_notifications_uuid UNIQUE (uuid),
     CONSTRAINT uq_notifications_event_uuid UNIQUE (event_uuid),
-    CONSTRAINT ck_notifications_type CHECK (type IN ('MONEY_DEPOSITED', 'MONEY_WITHDRAWN', 'MONEY_SENT', 'MONEY_RECEIVED', 'PROFILE_UPDATED'))
+    CONSTRAINT ck_notifications_type CHECK (type IN ('MONEY_DEPOSITED', 'MONEY_WITHDRAWN', 'MONEY_SENT', 'MONEY_RECEIVED', 'CUSTOMER_UPDATED'))
 );

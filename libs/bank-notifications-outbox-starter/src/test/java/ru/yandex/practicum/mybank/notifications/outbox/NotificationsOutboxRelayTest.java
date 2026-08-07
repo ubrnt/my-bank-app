@@ -45,7 +45,7 @@ class NotificationsOutboxRelayTest {
 	}
 
 	@Test
-	void sendsColumnsOfClaimedEventAsIs() {
+	void lowercasesTypeAndSendsOtherColumnsAsIs() {
 		NotificationsOutboxEvent event = claimed(1L);
 		when(notificationsOutboxService.claim()).thenReturn(List.of(event));
 
@@ -56,7 +56,7 @@ class NotificationsOutboxRelayTest {
 
 		NotificationRequest request = captor.getValue();
 		assertThat(request.eventUuid()).isEqualTo(event.getUuid());
-		assertThat(request.type()).isEqualTo("PROFILE_UPDATED");
+		assertThat(request.type()).isEqualTo("customer_updated");
 		assertThat(request.recipientUuid()).isEqualTo(RECIPIENT_UUID);
 		assertThat(request.payload()).isEqualTo(PAYLOAD_JSON);
 
@@ -93,7 +93,7 @@ class NotificationsOutboxRelayTest {
 
 	private NotificationsOutboxEvent claimed(long id) {
 		NotificationsOutboxEvent event = new NotificationsOutboxEvent(
-				"PROFILE_UPDATED", "CUSTOMER", 7L, RECIPIENT_UUID, PAYLOAD_JSON);
+				"CUSTOMER_UPDATED", "CUSTOMER", 7L, RECIPIENT_UUID, PAYLOAD_JSON);
 		ReflectionTestUtils.setField(event, "id", id);
 
 		return event;

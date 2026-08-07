@@ -3,7 +3,8 @@ package contracts.events
 import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {
-	description "accepts PROFILE_UPDATED event: payload carries the updated customer"
+	description "accepts CUSTOMER_UPDATED event: payload carries the updated customer"
+	priority 1
 	request {
 		method POST()
 		url "/api/notifications"
@@ -12,7 +13,7 @@ Contract.make {
 		}
 		body(
 				eventUuid: $(anyUuid()),
-				type: "profile_updated",
+				type: "customer_updated",
 				recipientUuid: $(anyUuid()),
 				payload: [
 						uuid: $(anyUuid())

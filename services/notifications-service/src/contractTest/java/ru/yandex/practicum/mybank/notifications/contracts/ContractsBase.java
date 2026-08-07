@@ -23,7 +23,7 @@ public abstract class ContractsBase {
 		NotificationsService notificationsService = mock(NotificationsService.class);
 		doThrow(new InvalidEventException("Event payload lacks field 'operation'"))
 				.when(notificationsService)
-				.receive(any(), argThat(type -> type != EventType.PROFILE_UPDATED), any(),
+				.receive(any(), argThat(type -> type != EventType.CUSTOMER_UPDATED), any(),
 						argThat((JsonNode payload) -> !payload.has("operation")));
 
 		LocalValidatorFactoryBean validator = new LocalValidatorFactoryBean();

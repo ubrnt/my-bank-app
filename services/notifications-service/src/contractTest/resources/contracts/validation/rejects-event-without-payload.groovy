@@ -4,6 +4,7 @@ import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {
 	description "rejects an event without payload listing the missing field"
+	priority 2
 	request {
 		method POST()
 		url "/api/notifications"
