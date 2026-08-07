@@ -3,6 +3,8 @@ package ru.yandex.practicum.mybank.notifications.outbox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.NestedExceptionUtils;
+
+import java.util.Locale;
 import org.springframework.scheduling.annotation.Scheduled;
 import ru.yandex.practicum.mybank.chassis.worker.BatchProcessor;
 
@@ -16,7 +18,8 @@ public class NotificationsOutboxRelay {
 		this.processor = new BatchProcessor<>(
 				notificationsOutboxService::claim,
 				event -> notificationsClient.send(new NotificationRequest(
-						event.getUuid(), event.getEventType(), event.getRecipientUuid(), event.getPayload())),
+						event.getUuid(), event.getEventType().toLowerCase(Locale.ROOT),
+						event.getRecipientUuid(), event.getPayload())),
 				event -> notificationsOutboxService.markProcessed(event.getId()),
 				(event, e) -> {
 					notificationsOutboxService.markNotDelivered(event.getId(),

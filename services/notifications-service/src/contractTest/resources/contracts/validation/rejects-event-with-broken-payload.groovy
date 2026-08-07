@@ -12,7 +12,7 @@ Contract.make {
 		}
 		body(
 				eventUuid: $(anyUuid()),
-				type: "MONEY_WITHDRAWN",
+				type: "money_withdrawn",
 				recipientUuid: $(anyUuid()),
 				payload: [
 						uuid: $(anyUuid())

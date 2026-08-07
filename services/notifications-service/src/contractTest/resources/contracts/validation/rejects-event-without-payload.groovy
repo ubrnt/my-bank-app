@@ -12,7 +12,7 @@ Contract.make {
 		}
 		body(
 				eventUuid: $(anyUuid()),
-				type: "MONEY_DEPOSITED",
+				type: "money_deposited",
 				recipientUuid: $(anyUuid())
 		)
 	}

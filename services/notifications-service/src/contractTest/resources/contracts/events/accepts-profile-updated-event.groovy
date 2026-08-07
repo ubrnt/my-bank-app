@@ -12,7 +12,7 @@ Contract.make {
 		}
 		body(
 				eventUuid: $(anyUuid()),
-				type: "PROFILE_UPDATED",
+				type: "profile_updated",
 				recipientUuid: $(anyUuid()),
 				payload: [
 						uuid: $(anyUuid())
