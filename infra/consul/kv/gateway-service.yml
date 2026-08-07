@@ -1,0 +1,18 @@
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: accounts-service
+              uri: lb://accounts-service
+              predicates:
+                - Path=/api/customers/**
+            - id: cash-service
+              uri: lb://cash-service
+              predicates:
+                - Path=/api/cash/**
+            - id: transfer-service
+              uri: lb://transfer-service
+              predicates:
+                - Path=/api/transfers/**
