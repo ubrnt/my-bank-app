@@ -48,6 +48,7 @@ public class CashOperation extends BaseEntity {
 		this.accountUuid = accountUuid;
 		this.customerUuid = customerUuid;
 		this.status = CashOperationStatus.COMPLETED;
+		this.failureReason = null;
 	}
 
 	public void fail(String failureReason) {

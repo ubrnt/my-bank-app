@@ -10,6 +10,7 @@ Contract.make {
 		url "/api/cash/deposit"
 		headers {
 			contentType(applicationJson())
+			header("Idempotency-Key", $(consumer(regex(uuid())), producer("aaaaaaaa-2222-3333-4444-555555555555")))
 		}
 		body(
 				amount: 1500

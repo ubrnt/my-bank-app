@@ -6,10 +6,13 @@ import ru.yandex.practicum.mybank.cash.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.cash.client.dto.TransactionRequest;
 import ru.yandex.practicum.mybank.cash.client.dto.TransactionResponse;
 import ru.yandex.practicum.mybank.cash.domain.CashOperation;
+import ru.yandex.practicum.mybank.cash.domain.CashOperationStatus;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationType;
 import ru.yandex.practicum.mybank.cash.domain.EventType;
 import ru.yandex.practicum.mybank.cash.service.dto.CashOperationDto;
 import ru.yandex.practicum.mybank.chassis.client.ServiceCallException;
+
+import java.util.UUID;
 
 @Service
 public class CashService {
@@ -24,16 +27,22 @@ public class CashService {
 		this.journal = journal;
 	}
 
-	public CashOperationDto deposit(String login, long amount) {
-		return process(CashOperationType.DEPOSIT, login, amount);
+	public CashOperationDto deposit(UUID idempotencyKey, String login, long amount) {
+		return process(CashOperationType.DEPOSIT, idempotencyKey, login, amount);
 	}
 
-	public CashOperationDto withdraw(String login, long amount) {
-		return process(CashOperationType.WITHDRAW, login, amount);
+	public CashOperationDto withdraw(UUID idempotencyKey, String login, long amount) {
+		return process(CashOperationType.WITHDRAW, idempotencyKey, login, amount);
 	}
 
-	private CashOperationDto process(CashOperationType type, String login, long amount) {
-		CashOperation operation = journal.pending(type, amount);
+	private CashOperationDto process(CashOperationType type, UUID idempotencyKey, String login, long amount) {
+		CashOperation operation = journal.tryAcquireClaim(idempotencyKey, type, amount)
+				.or(() -> journal.findSettledOrExpired(idempotencyKey))
+				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
+
+		if (operation.getStatus() == CashOperationStatus.COMPLETED) {
+			return CashOperationDto.of(operation);
+		}
 
 		TransactionRequest request = new TransactionRequest(operation.getUuid(), login, amount);
 
@@ -53,10 +62,12 @@ public class CashService {
 			throw new AccountsServiceUnavailableException(e);
 		}
 
-		return CashOperationDto.of(finalizeCompleted(type, operation.getId(), transaction));
+		CashOperation completedOperation = markCompleted(type, operation.getId(), transaction);
+
+		return CashOperationDto.of(completedOperation);
 	}
 
-	private CashOperation finalizeCompleted(CashOperationType type, long operationId, TransactionResponse transaction) {
+	private CashOperation markCompleted(CashOperationType type, long operationId, TransactionResponse transaction) {
 		return switch (type) {
 			case DEPOSIT -> journal.complete(operationId,
 					transaction.operation().toAccountUuid(), transaction.operation().toCustomerUuid(),

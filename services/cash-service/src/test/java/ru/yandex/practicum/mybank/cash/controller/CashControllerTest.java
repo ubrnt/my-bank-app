@@ -13,6 +13,7 @@ import ru.yandex.practicum.mybank.cash.domain.CashOperationStatus;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationType;
 import ru.yandex.practicum.mybank.cash.service.AccountsServiceUnavailableException;
 import ru.yandex.practicum.mybank.cash.service.CashService;
+import ru.yandex.practicum.mybank.cash.service.DuplicateRequestException;
 import ru.yandex.practicum.mybank.cash.service.dto.CashOperationDto;
 
 import java.util.UUID;
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CashControllerTest {
 
 	private static final UUID OPERATION_UUID = UUID.fromString("7c9e2b40-5a13-4f8e-9d26-1b0a8c4e0001");
+	private static final UUID IDEMPOTENCY_KEY = UUID.fromString("7c9e2b40-5a13-4f8e-9d26-1b0a8c4e0002");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -41,6 +43,7 @@ class CashControllerTest {
 	@Test
 	void rejectsAnonymousCaller() throws Exception {
 		mockMvc.perform(post("/api/cash/deposit").contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 500}
 								"""))
@@ -51,6 +54,7 @@ class CashControllerTest {
 	void rejectsTokenWithoutWriteScope() throws Exception {
 		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "customer:read"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 500}
 								"""))
@@ -59,11 +63,12 @@ class CashControllerTest {
 
 	@Test
 	void depositsForLoginFromToken() throws Exception {
-		when(cashService.deposit("user1", 500)).thenReturn(new CashOperationDto(
+		when(cashService.deposit(IDEMPOTENCY_KEY, "user1", 500)).thenReturn(new CashOperationDto(
 				OPERATION_UUID, CashOperationType.DEPOSIT, 500, CashOperationStatus.COMPLETED));
 
 		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 500}
 								"""))
@@ -74,9 +79,31 @@ class CashControllerTest {
 	}
 
 	@Test
+	void rejectsRequestWithoutIdempotencyKey() throws Exception {
+		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"amount": 500}
+								"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void rejectsMalformedIdempotencyKey() throws Exception {
+		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", "not-a-uuid")
+						.content("""
+								{"amount": 500}
+								"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void rejectsNonPositiveAmount() throws Exception {
 		mockMvc.perform(post("/api/cash/withdraw").with(user("user1", "cash:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 0}
 								"""))
@@ -87,11 +114,12 @@ class CashControllerTest {
 
 	@Test
 	void translatesRejectionFromAccounts() throws Exception {
-		when(cashService.withdraw("user1", 500))
+		when(cashService.withdraw(IDEMPOTENCY_KEY, "user1", 500))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
 
 		mockMvc.perform(post("/api/cash/withdraw").with(user("user1", "cash:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 500}
 								"""))
@@ -100,12 +128,28 @@ class CashControllerTest {
 	}
 
 	@Test
+	void reportsDuplicateRequest() throws Exception {
+		when(cashService.deposit(IDEMPOTENCY_KEY, "user1", 500))
+				.thenThrow(new DuplicateRequestException(IDEMPOTENCY_KEY));
+
+		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
+						.content("""
+								{"amount": 500}
+								"""))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("duplicate_request"));
+	}
+
+	@Test
 	void reportsAccountsUnavailability() throws Exception {
-		when(cashService.deposit("user1", 500))
+		when(cashService.deposit(IDEMPOTENCY_KEY, "user1", 500))
 				.thenThrow(new AccountsServiceUnavailableException(new RuntimeException("boom")));
 
 		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"amount": 500}
 								"""))

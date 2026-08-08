@@ -3,26 +3,26 @@ package contracts.cash
 import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {
-	description "rejects a withdrawal that exceeds the available balance"
+	description "rejects a repeated request while the first one is still being processed"
 	priority 1
 	request {
 		method POST()
-		url "/api/cash/withdraw"
+		url "/api/cash/deposit"
 		headers {
 			contentType(applicationJson())
-			header("Idempotency-Key", $(consumer(regex(uuid())), producer("cccccccc-2222-3333-4444-555555555555")))
+			header("Idempotency-Key", "dddddddd-1111-1111-1111-111111111111")
 		}
 		body(
-				amount: 1000000000000
+				amount: 1500
 		)
 	}
 	response {
-		status UNPROCESSABLE_ENTITY()
+		status CONFLICT()
 		headers {
 			contentType(applicationJson())
 		}
 		body(
-				code: "insufficient_funds",
+				code: "duplicate_request",
 				message: $(anyNonBlankString())
 		)
 	}

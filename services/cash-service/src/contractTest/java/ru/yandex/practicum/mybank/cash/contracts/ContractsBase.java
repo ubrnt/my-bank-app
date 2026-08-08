@@ -14,6 +14,7 @@ import ru.yandex.practicum.mybank.cash.controller.CashController;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationStatus;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationType;
 import ru.yandex.practicum.mybank.cash.service.CashService;
+import ru.yandex.practicum.mybank.cash.service.DuplicateRequestException;
 import ru.yandex.practicum.mybank.cash.service.dto.CashOperationDto;
 
 import java.util.UUID;
@@ -28,20 +29,23 @@ import static org.mockito.Mockito.when;
 public abstract class ContractsBase {
 
 	private static final UUID OPERATION_UUID = UUID.fromString("cccccccc-1111-1111-1111-111111111111");
+	private static final UUID IN_PROGRESS_KEY = UUID.fromString("dddddddd-1111-1111-1111-111111111111");
 	private static final long BEYOND_BALANCE = 1_000_000_000_000L;
 
 	@BeforeEach
 	void setUp() {
 		CashService cashService = mock(CashService.class);
 
-		when(cashService.deposit(any(), anyLong())).thenAnswer(invocation ->
+		when(cashService.deposit(any(), any(), anyLong())).thenAnswer(invocation ->
 				new CashOperationDto(OPERATION_UUID, CashOperationType.DEPOSIT,
-						invocation.getArgument(1), CashOperationStatus.COMPLETED));
-		when(cashService.withdraw(any(), anyLong())).thenAnswer(invocation ->
+						invocation.getArgument(2), CashOperationStatus.COMPLETED));
+		when(cashService.withdraw(any(), any(), anyLong())).thenAnswer(invocation ->
 				new CashOperationDto(OPERATION_UUID, CashOperationType.WITHDRAW,
-						invocation.getArgument(1), CashOperationStatus.COMPLETED));
+						invocation.getArgument(2), CashOperationStatus.COMPLETED));
 		doThrow(new TransactionRejectedException("insufficient_funds", "Not enough money on the account"))
-				.when(cashService).withdraw(any(), eq(BEYOND_BALANCE));
+				.when(cashService).withdraw(any(), any(), eq(BEYOND_BALANCE));
+		doThrow(new DuplicateRequestException(IN_PROGRESS_KEY))
+				.when(cashService).deposit(eq(IN_PROGRESS_KEY), any(), anyLong());
 
 		SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
 				.header("alg", "none")
