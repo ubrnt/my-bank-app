@@ -23,11 +23,11 @@ public class TransferOperation extends BaseEntity {
 	@Column(name = "from_account_uuid")
 	private UUID fromAccountUuid;
 
-	@Column(name = "to_account_uuid")
-	private UUID toAccountUuid;
-
 	@Column(name = "to_customer_uuid")
 	private UUID toCustomerUuid;
+
+	@Column(name = "to_account_uuid")
+	private UUID toAccountUuid;
 
 	@Column(nullable = false, updatable = false)
 	private long amount;
@@ -67,20 +67,20 @@ public class TransferOperation extends BaseEntity {
 		return fromCustomerLogin;
 	}
 
-	public UUID getFromAccountUuid() {
-		return fromAccountUuid;
-	}
-
 	public UUID getFromCustomerUuid() {
 		return fromCustomerUuid;
 	}
 
-	public UUID getToAccountUuid() {
-		return toAccountUuid;
+	public UUID getFromAccountUuid() {
+		return fromAccountUuid;
 	}
 
 	public UUID getToCustomerUuid() {
 		return toCustomerUuid;
+	}
+
+	public UUID getToAccountUuid() {
+		return toAccountUuid;
 	}
 
 	public long getAmount() {
