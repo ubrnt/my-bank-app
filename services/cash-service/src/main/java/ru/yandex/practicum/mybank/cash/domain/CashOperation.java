@@ -14,11 +14,14 @@ import java.util.UUID;
 @Table(name = "cash_operations")
 public class CashOperation extends BaseEntity {
 
-	@Column(name = "account_uuid")
-	private UUID accountUuid;
+	@Column(name = "customer_login", nullable = false, updatable = false)
+	private String customerLogin;
 
 	@Column(name = "customer_uuid")
 	private UUID customerUuid;
+
+	@Column(name = "account_uuid")
+	private UUID accountUuid;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, updatable = false, length = 16)
@@ -37,8 +40,9 @@ public class CashOperation extends BaseEntity {
 	protected CashOperation() {
 	}
 
-	public CashOperation(UUID uuid, CashOperationType type, long amount) {
+	public CashOperation(UUID uuid, String customerLogin, CashOperationType type, long amount) {
 		super(uuid);
+		this.customerLogin = customerLogin;
 		this.type = type;
 		this.amount = amount;
 		this.status = CashOperationStatus.PENDING;
@@ -54,6 +58,10 @@ public class CashOperation extends BaseEntity {
 	public void fail(String failureReason) {
 		this.status = CashOperationStatus.FAILED;
 		this.failureReason = failureReason;
+	}
+
+	public String getCustomerLogin() {
+		return customerLogin;
 	}
 
 	public UUID getAccountUuid() {

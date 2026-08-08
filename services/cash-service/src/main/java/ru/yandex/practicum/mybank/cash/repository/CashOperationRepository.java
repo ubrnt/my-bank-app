@@ -20,10 +20,10 @@ public interface CashOperationRepository extends JpaRepository<CashOperation, Lo
 	Optional<CashOperation> findSettledOrExpired(UUID uuid, long pendingTimeoutSeconds);
 
 	@Query(value = """
-			insert into cash_operations (uuid, type, amount, status, created_ts, updated_ts, version)
-			values (:uuid, :type, :amount, 'PENDING', now(), now(), 0)
+			insert into cash_operations (uuid, customer_login, type, amount, status, created_ts, updated_ts, version)
+			values (:uuid, :customerLogin, :type, :amount, 'PENDING', now(), now(), 0)
 			on conflict do nothing
 			returning *
 			""", nativeQuery = true)
-	Optional<CashOperation> insertIfAbsent(UUID uuid, String type, long amount);
+	Optional<CashOperation> insertIfAbsent(UUID uuid, String customerLogin, String type, long amount);
 }

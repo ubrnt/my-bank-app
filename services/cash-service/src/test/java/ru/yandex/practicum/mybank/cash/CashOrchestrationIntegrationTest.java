@@ -93,6 +93,7 @@ class CashOrchestrationIntegrationTest {
 		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from cash_operations");
 		assertThat(operation.get("status")).isEqualTo("FAILED");
 		assertThat(operation.get("failure_reason")).isEqualTo("insufficient_funds");
+		assertThat(operation.get("customer_login")).isEqualTo("user1");
 		assertThat(operation.get("account_uuid")).isNull();
 
 		Long events = jdbcTemplate.queryForObject("select count(*) from notifications_outbox", Long.class);
@@ -183,8 +184,8 @@ class CashOrchestrationIntegrationTest {
 
 	private void insertPendingOperation(UUID uuid, int ageSeconds) {
 		jdbcTemplate.update("""
-				insert into cash_operations (uuid, type, amount, status, created_ts, updated_ts, version)
-				values (?, 'DEPOSIT', 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
+				insert into cash_operations (uuid, customer_login, type, amount, status, created_ts, updated_ts, version)
+				values (?, 'user1', 'DEPOSIT', 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
 				""", uuid, ageSeconds);
 	}
 

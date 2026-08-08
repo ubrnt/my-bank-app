@@ -36,8 +36,9 @@ public class CashOperationJournal {
 	}
 
 	@Transactional
-	public Optional<CashOperation> tryAcquireClaim(UUID uuid, CashOperationType type, long amount) {
-		return cashOperationRepository.insertIfAbsent(uuid, type.name(), amount);
+	public Optional<CashOperation> tryAcquireClaim(UUID uuid, String customerLogin, CashOperationType type,
+			long amount) {
+		return cashOperationRepository.insertIfAbsent(uuid, customerLogin, type.name(), amount);
 	}
 
 	@Transactional

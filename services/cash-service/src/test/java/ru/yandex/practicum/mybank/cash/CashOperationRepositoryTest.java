@@ -29,7 +29,7 @@ class CashOperationRepositoryTest {
 	@Test
 	void persistsPendingOperationWithAuditFields() {
 		UUID transactionUuid = UUID.randomUUID();
-		cashOperationRepository.save(new CashOperation(transactionUuid, CashOperationType.DEPOSIT, 1000L));
+		cashOperationRepository.save(new CashOperation(transactionUuid, "user1", CashOperationType.DEPOSIT, 1000L));
 		flushAndClear();
 
 		CashOperation reloaded = cashOperationRepository.findByUuid(transactionUuid).orElseThrow();
@@ -76,7 +76,7 @@ class CashOperationRepositoryTest {
 	}
 
 	private CashOperation saveOperation() {
-		CashOperation operation = new CashOperation(UUID.randomUUID(), CashOperationType.WITHDRAW, 500L);
+		CashOperation operation = new CashOperation(UUID.randomUUID(), "user1", CashOperationType.WITHDRAW, 500L);
 		cashOperationRepository.save(operation);
 
 		return operation;
