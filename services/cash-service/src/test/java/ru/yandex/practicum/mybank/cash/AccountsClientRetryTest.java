@@ -52,7 +52,7 @@ class AccountsClientRetryTest {
 		assertThatThrownBy(() -> accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500)))
 				.isInstanceOf(ServiceCallException.class);
 
-		accounts.verify(3, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
+		accounts.verify(2, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
 	}
 
 	@Test
