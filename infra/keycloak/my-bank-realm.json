@@ -324,8 +324,8 @@
       "username": "user1",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "user1_first_name",
-      "lastName": "user1_last_name",
+      "firstName": "Иван",
+      "lastName": "Иванов",
       "email": "user1@my-bank.example",
       "credentials": [
         {
@@ -339,8 +339,8 @@
       "username": "user2",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "user2_first_name",
-      "lastName": "user2_last_name",
+      "firstName": "Пётр",
+      "lastName": "Петров",
       "email": "user2@my-bank.example",
       "credentials": [
         {
@@ -354,8 +354,8 @@
       "username": "user3",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "user3_first_name",
-      "lastName": "user3_last_name",
+      "firstName": "Сидор",
+      "lastName": "Сидоров",
       "email": "user3@my-bank.example",
       "credentials": [
         {
