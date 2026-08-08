@@ -21,7 +21,9 @@ import ru.yandex.practicum.mybank.front.controller.dto.AccountDto;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -38,6 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(MainController.class)
 @Import(WebSliceConfig.class)
 class MainControllerTest {
+
+	private static final UUID IDEMPOTENCY_KEY = UUID.fromString("7c9e2b40-5a13-4f8e-9d26-1b0a8c4e0004");
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -85,34 +89,78 @@ class MainControllerTest {
 	@Test
 	void depositsCash() throws Exception {
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "100")
 						.param("action", "PUT"))
 				.andExpect(status().isOk())
 				.andExpect(model().attribute("info", "Положено 100 руб"));
 
-		verify(gatewayClient).deposit(new CashRequest(100));
+		verify(gatewayClient).deposit(IDEMPOTENCY_KEY, new CashRequest(100));
 	}
 
 	@Test
 	void withdrawsCash() throws Exception {
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
 				.andExpect(model().attribute("info", "Снято 100 руб"));
 
-		verify(gatewayClient).withdraw(new CashRequest(100));
+		verify(gatewayClient).withdraw(IDEMPOTENCY_KEY, new CashRequest(100));
 	}
 
 	@Test
 	void transfersMoney() throws Exception {
 		mockMvc.perform(post("/transfer").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "300")
 						.param("login", "user2"))
 				.andExpect(status().isOk())
 				.andExpect(model().attribute("info", "Успешно переведено 300 руб клиенту user2"));
 
-		verify(gatewayClient).transfer(new TransferRequest("user2", 300));
+		verify(gatewayClient).transfer(IDEMPOTENCY_KEY, new TransferRequest("user2", 300));
+	}
+
+	@Test
+	void rendersAnIdempotencyKeyForTheForms() throws Exception {
+		mockMvc.perform(get("/account").with(oidcLogin()))
+				.andExpect(status().isOk())
+				.andExpect(model().attributeExists("idempotencyKey"));
+	}
+
+	@Test
+	void rotatesTheKeyAfterSuccessfulOperation() throws Exception {
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "PUT"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("idempotencyKey", not(IDEMPOTENCY_KEY)));
+	}
+
+	@Test
+	void echoesTheKeyAfterFailedOperation() throws Exception {
+		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", null));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("idempotencyKey", IDEMPOTENCY_KEY));
+	}
+
+	@Test
+	void showsDuplicateRequestRejection() throws Exception {
+		rejectWithdrawal(new ErrorResponse("duplicate_request", "Already in progress", null));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Операция уже выполняется, обновите страницу")));
 	}
 
 	@Test
@@ -120,6 +168,7 @@ class MainControllerTest {
 		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", null));
 
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
@@ -146,6 +195,7 @@ class MainControllerTest {
 		rejectWithdrawal(new ErrorResponse("teapot_on_fire", "Whatever", null));
 
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
@@ -158,6 +208,7 @@ class MainControllerTest {
 		rejectWithdrawal(null);
 
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
@@ -186,6 +237,6 @@ class MainControllerTest {
 
 	private void rejectWithdrawal(ErrorResponse response) {
 		doThrow(new GatewayException(response, new RuntimeException()))
-				.when(gatewayClient).withdraw(any());
+				.when(gatewayClient).withdraw(any(), any());
 	}
 }

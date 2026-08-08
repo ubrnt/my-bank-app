@@ -13,10 +13,13 @@ import ru.yandex.practicum.mybank.front.client.dto.TransferRequest;
 import ru.yandex.practicum.mybank.front.client.dto.UpdateProfileRequest;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 @Component
 public class GatewayClient {
+
+	private static final String IDEMPOTENCY_KEY = "Idempotency-Key";
 
 	private final RestClient restClient;
 
@@ -46,25 +49,28 @@ public class GatewayClient {
 				.toBodilessEntity());
 	}
 
-	public void deposit(CashRequest request) {
+	public void deposit(UUID idempotencyKey, CashRequest request) {
 		call(() -> restClient.post()
 				.uri("/api/cash/deposit")
+				.header(IDEMPOTENCY_KEY, idempotencyKey.toString())
 				.body(request)
 				.retrieve()
 				.toBodilessEntity());
 	}
 
-	public void withdraw(CashRequest request) {
+	public void withdraw(UUID idempotencyKey, CashRequest request) {
 		call(() -> restClient.post()
 				.uri("/api/cash/withdraw")
+				.header(IDEMPOTENCY_KEY, idempotencyKey.toString())
 				.body(request)
 				.retrieve()
 				.toBodilessEntity());
 	}
 
-	public void transfer(TransferRequest request) {
+	public void transfer(UUID idempotencyKey, TransferRequest request) {
 		call(() -> restClient.post()
 				.uri("/api/transfers")
+				.header(IDEMPOTENCY_KEY, idempotencyKey.toString())
 				.body(request)
 				.retrieve()
 				.toBodilessEntity());

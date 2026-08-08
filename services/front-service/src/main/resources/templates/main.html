@@ -68,6 +68,7 @@
                     </div>
                     <div class="card-body gap-3">
                         <form method="post" th:action="@{/cash}">
+                            <input type="hidden" name="idempotencyKey" th:value="${idempotencyKey}">
                             <div class="form-group">
                                 <h6>
                                     <label for="cash_value">Сумма, руб.</label>
@@ -91,6 +92,7 @@
                     </div>
                     <div class="card-body gap-3">
                         <form method="post" th:action="@{/transfer}">
+                            <input type="hidden" name="idempotencyKey" th:value="${idempotencyKey}">
                             <div class="form-group">
                                 <h6>
                                     <label for="to_account">Кому</label>

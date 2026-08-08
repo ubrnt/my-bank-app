@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mybank.front.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Контроллер main.html.
@@ -60,7 +62,7 @@ public class MainController {
 
 	@GetMapping("/account")
 	public String getAccount(Model model) {
-		fillModel(model, List.of(), null);
+		fillModel(model, List.of(), null, UUID.randomUUID());
 
 		return "main";
 	}
@@ -72,7 +74,7 @@ public class MainController {
 			@RequestParam("birthdate") LocalDate birthdate
 	) {
 		gatewayClient.updateCustomer(new UpdateProfileRequest(name, birthdate));
-		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"));
+		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"), UUID.randomUUID());
 
 		return "main";
 	}
@@ -80,11 +82,12 @@ public class MainController {
 	@PostMapping("/cash")
 	public String editCash(
 			Model model,
+			@RequestParam("idempotencyKey") UUID idempotencyKey,
 			@RequestParam("value") long value,
 			@RequestParam("action") CashAction action
 	) {
-		String info = action == CashAction.PUT ? deposit(value) : withdraw(value);
-		fillModel(model, List.of(), info);
+		String info = action == CashAction.PUT ? deposit(idempotencyKey, value) : withdraw(idempotencyKey, value);
+		fillModel(model, List.of(), info, UUID.randomUUID());
 
 		return "main";
 	}
@@ -92,35 +95,42 @@ public class MainController {
 	@PostMapping("/transfer")
 	public String transfer(
 			Model model,
+			@RequestParam("idempotencyKey") UUID idempotencyKey,
 			@RequestParam("value") long value,
 			@RequestParam("login") String login
 	) {
-		gatewayClient.transfer(new TransferRequest(login, value));
-		fillModel(model, List.of(), messages.infoMessage("info.transferred", value, login));
+		gatewayClient.transfer(idempotencyKey, new TransferRequest(login, value));
+		fillModel(model, List.of(), messages.infoMessage("info.transferred", value, login), UUID.randomUUID());
 
 		return "main";
 	}
 
 	@ExceptionHandler(GatewayException.class)
-	public String handleGatewayFailure(GatewayException exception, Model model) {
-		fillModel(model, messages.errorMessages(exception), null);
+	public String handleGatewayFailure(GatewayException exception, HttpServletRequest request, Model model) {
+		fillModel(model, messages.errorMessages(exception), null, submittedKey(request));
 
 		return "main";
 	}
 
-	private String deposit(long value) {
-		gatewayClient.deposit(new CashRequest(value));
+	private String deposit(UUID idempotencyKey, long value) {
+		gatewayClient.deposit(idempotencyKey, new CashRequest(value));
 
 		return messages.infoMessage("info.deposited", value);
 	}
 
-	private String withdraw(long value) {
-		gatewayClient.withdraw(new CashRequest(value));
+	private String withdraw(UUID idempotencyKey, long value) {
+		gatewayClient.withdraw(idempotencyKey, new CashRequest(value));
 
 		return messages.infoMessage("info.withdrawn", value);
 	}
 
-	private void fillModel(Model model, List<String> errors, String info) {
+	private UUID submittedKey(HttpServletRequest request) {
+		String submitted = request.getParameter("idempotencyKey");
+
+		return submitted != null ? UUID.fromString(submitted) : UUID.randomUUID();
+	}
+
+	private void fillModel(Model model, List<String> errors, String info, UUID idempotencyKey) {
 		List<String> allErrors = new ArrayList<>(errors);
 
 		try {
@@ -140,5 +150,6 @@ public class MainController {
 
 		model.addAttribute("errors", allErrors.isEmpty() ? null : allErrors);
 		model.addAttribute("info", info);
+		model.addAttribute("idempotencyKey", idempotencyKey);
 	}
 }
