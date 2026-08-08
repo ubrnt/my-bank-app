@@ -1,4 +1,7 @@
 spring:
+  http:
+    clients:
+      read-timeout: 25s
   security:
     oauth2:
       client:
