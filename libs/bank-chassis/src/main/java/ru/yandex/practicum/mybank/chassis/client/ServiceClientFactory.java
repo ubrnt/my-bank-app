@@ -19,17 +19,22 @@ public class ServiceClientFactory {
 	}
 
 	public RestClient restClient(String serviceId) {
-		return restClient(serviceId, serviceId);
+		return restClient(serviceId, serviceId, CircuitBreakerPolicy.TRANSPORT_AND_SERVER_ERRORS);
 	}
 
 	public RestClient restClient(String serviceId, String registrationId) {
+		return restClient(serviceId, registrationId, CircuitBreakerPolicy.TRANSPORT_AND_SERVER_ERRORS);
+	}
+
+	public RestClient restClient(String serviceId, String registrationId, CircuitBreakerPolicy policy) {
 		OAuth2ClientHttpRequestInterceptor tokenInterceptor = new OAuth2ClientHttpRequestInterceptor(clientManager);
 		tokenInterceptor.setClientRegistrationIdResolver(request -> registrationId);
 
 		return builder.clone()
 				.baseUrl("http://" + serviceId)
+				.requestInterceptor(new ClientLoggingInterceptor(serviceId))
 				.requestInterceptor(tokenInterceptor)
-				.requestInterceptor(new CircuitBreakerInterceptor(circuitBreakerFactory, serviceId))
+				.requestInterceptor(new CircuitBreakerInterceptor(circuitBreakerFactory, serviceId, policy))
 				.build();
 	}
 }

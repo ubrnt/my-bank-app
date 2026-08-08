@@ -15,10 +15,13 @@ public class CircuitBreakerInterceptor implements ClientHttpRequestInterceptor {
 
 	private final CircuitBreakerFactory<?, ?> circuitBreakerFactory;
 	private final String circuitBreakerId;
+	private final CircuitBreakerPolicy policy;
 
-	public CircuitBreakerInterceptor(CircuitBreakerFactory<?, ?> circuitBreakerFactory, String circuitBreakerId) {
+	public CircuitBreakerInterceptor(CircuitBreakerFactory<?, ?> circuitBreakerFactory, String circuitBreakerId,
+			CircuitBreakerPolicy policy) {
 		this.circuitBreakerFactory = circuitBreakerFactory;
 		this.circuitBreakerId = circuitBreakerId;
+		this.policy = policy;
 	}
 
 	@SuppressWarnings("NullableProblems")
@@ -29,7 +32,8 @@ public class CircuitBreakerInterceptor implements ClientHttpRequestInterceptor {
 					try {
 						ClientHttpResponse response = execution.execute(request, body);
 
-						if (response.getStatusCode().is5xxServerError()) {
+						if (policy == CircuitBreakerPolicy.TRANSPORT_AND_SERVER_ERRORS
+							&& response.getStatusCode().is5xxServerError()) {
 							HttpStatusCode status = response.getStatusCode();
 							response.close();
 
