@@ -10,6 +10,7 @@ Contract.make {
 		url "/api/transfers"
 		headers {
 			contentType(applicationJson())
+			header("Idempotency-Key", $(consumer(regex(uuid())), producer("aaaaaaaa-3333-3333-3333-555555555555")))
 		}
 		body(
 				toLogin: "user2",

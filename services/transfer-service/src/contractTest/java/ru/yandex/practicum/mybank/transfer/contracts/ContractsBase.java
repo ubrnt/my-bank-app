@@ -12,6 +12,7 @@ import ru.yandex.practicum.mybank.transfer.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.transfer.controller.ApiExceptionHandler;
 import ru.yandex.practicum.mybank.transfer.controller.TransferController;
 import ru.yandex.practicum.mybank.transfer.domain.TransferOperationStatus;
+import ru.yandex.practicum.mybank.transfer.service.DuplicateRequestException;
 import ru.yandex.practicum.mybank.transfer.service.TransferService;
 import ru.yandex.practicum.mybank.transfer.service.dto.TransferOperationDto;
 
@@ -27,19 +28,22 @@ import static org.mockito.Mockito.when;
 public abstract class ContractsBase {
 
 	private static final UUID OPERATION_UUID = UUID.fromString("dddddddd-1111-1111-1111-111111111111");
+	private static final UUID IN_PROGRESS_KEY = UUID.fromString("eeeeeeee-1111-1111-1111-111111111111");
 	private static final long BEYOND_BALANCE = 1_000_000_000_000L;
 
 	@BeforeEach
 	void setUp() {
 		TransferService transferService = mock(TransferService.class);
 
-		when(transferService.transfer(any(), any(), anyLong())).thenAnswer(invocation ->
-				new TransferOperationDto(OPERATION_UUID, invocation.getArgument(2),
+		when(transferService.transfer(any(), any(), any(), anyLong())).thenAnswer(invocation ->
+				new TransferOperationDto(OPERATION_UUID, invocation.getArgument(3),
 						TransferOperationStatus.COMPLETED));
 		doThrow(new TransactionRejectedException("insufficient_funds", "Not enough money on the account"))
-				.when(transferService).transfer(any(), any(), eq(BEYOND_BALANCE));
+				.when(transferService).transfer(any(), any(), any(), eq(BEYOND_BALANCE));
 		doThrow(new TransactionRejectedException("same_account", "Cannot transfer to the same account"))
-				.when(transferService).transfer(any(), eq("user1"), anyLong());
+				.when(transferService).transfer(any(), any(), eq("user1"), anyLong());
+		doThrow(new DuplicateRequestException(IN_PROGRESS_KEY))
+				.when(transferService).transfer(eq(IN_PROGRESS_KEY), any(), any(), anyLong());
 
 		SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(Jwt.withTokenValue("token")
 				.header("alg", "none")

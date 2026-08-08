@@ -10,6 +10,7 @@ import ru.yandex.practicum.mybank.chassis.web.BaseExceptionHandler;
 import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 import ru.yandex.practicum.mybank.transfer.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.transfer.service.AccountsServiceUnavailableException;
+import ru.yandex.practicum.mybank.transfer.service.DuplicateRequestException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends BaseExceptionHandler {
@@ -30,6 +31,12 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
 				.body(new ErrorResponse(exception.getCode(), exception.getMessage()));
+	}
+
+	@ExceptionHandler(DuplicateRequestException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateRequest(DuplicateRequestException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse("duplicate_request", exception.getMessage()));
 	}
 
 	@ExceptionHandler(AccountsServiceUnavailableException.class)

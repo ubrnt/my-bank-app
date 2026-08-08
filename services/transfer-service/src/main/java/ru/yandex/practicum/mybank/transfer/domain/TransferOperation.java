@@ -14,9 +14,6 @@ import java.util.UUID;
 @Table(name = "transfer_operations")
 public class TransferOperation extends BaseEntity {
 
-	@Column(name = "transaction_uuid", nullable = false, updatable = false)
-	private UUID transactionUuid;
-
 	@Column(name = "from_account_uuid")
 	private UUID fromAccountUuid;
 
@@ -42,33 +39,24 @@ public class TransferOperation extends BaseEntity {
 	protected TransferOperation() {
 	}
 
-	private TransferOperation(UUID transactionUuid, long amount, TransferOperationStatus status) {
-		this.transactionUuid = transactionUuid;
+	public TransferOperation(UUID uuid, long amount) {
+		super(uuid);
 		this.amount = amount;
-		this.status = status;
+		this.status = TransferOperationStatus.PENDING;
 	}
 
-	public static TransferOperation completed(UUID transactionUuid, long amount,
-			UUID fromAccountUuid, UUID fromCustomerUuid,
-			UUID toAccountUuid, UUID toCustomerUuid) {
-		TransferOperation operation = new TransferOperation(transactionUuid, amount, TransferOperationStatus.COMPLETED);
-		operation.fromAccountUuid = fromAccountUuid;
-		operation.fromCustomerUuid = fromCustomerUuid;
-		operation.toAccountUuid = toAccountUuid;
-		operation.toCustomerUuid = toCustomerUuid;
-
-		return operation;
+	public void complete(UUID fromAccountUuid, UUID fromCustomerUuid, UUID toAccountUuid, UUID toCustomerUuid) {
+		this.fromAccountUuid = fromAccountUuid;
+		this.fromCustomerUuid = fromCustomerUuid;
+		this.toAccountUuid = toAccountUuid;
+		this.toCustomerUuid = toCustomerUuid;
+		this.status = TransferOperationStatus.COMPLETED;
+		this.failureReason = null;
 	}
 
-	public static TransferOperation failed(UUID transactionUuid, long amount, String failureReason) {
-		TransferOperation operation = new TransferOperation(transactionUuid, amount, TransferOperationStatus.FAILED);
-		operation.failureReason = failureReason;
-
-		return operation;
-	}
-
-	public UUID getTransactionUuid() {
-		return transactionUuid;
+	public void fail(String failureReason) {
+		this.status = TransferOperationStatus.FAILED;
+		this.failureReason = failureReason;
 	}
 
 	public UUID getFromAccountUuid() {

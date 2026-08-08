@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import ru.yandex.practicum.mybank.transfer.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.transfer.domain.TransferOperationStatus;
 import ru.yandex.practicum.mybank.transfer.service.AccountsServiceUnavailableException;
+import ru.yandex.practicum.mybank.transfer.service.DuplicateRequestException;
 import ru.yandex.practicum.mybank.transfer.service.TransferService;
 import ru.yandex.practicum.mybank.transfer.service.dto.TransferOperationDto;
 
@@ -28,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TransferControllerTest {
 
 	private static final UUID OPERATION_UUID = UUID.fromString("7c9e2b40-5a13-4f8e-9d26-1b0a8c4e0002");
+	private static final UUID IDEMPOTENCY_KEY = UUID.fromString("7c9e2b40-5a13-4f8e-9d26-1b0a8c4e0003");
 	private static final String BODY = """
 			{"toLogin": "user2", "amount": 500}
 			""";
@@ -43,7 +45,9 @@ class TransferControllerTest {
 
 	@Test
 	void rejectsAnonymousCaller() throws Exception {
-		mockMvc.perform(post("/api/transfers").contentType(MediaType.APPLICATION_JSON).content(BODY))
+		mockMvc.perform(post("/api/transfers").contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
+						.content(BODY))
 				.andExpect(status().isUnauthorized());
 	}
 
@@ -51,17 +55,19 @@ class TransferControllerTest {
 	void rejectsTokenWithoutWriteScope() throws Exception {
 		mockMvc.perform(post("/api/transfers").with(user("user1", "cash:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isForbidden());
 	}
 
 	@Test
 	void transfersFromLoginInToken() throws Exception {
-		when(transferService.transfer("user1", "user2", 500))
+		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.thenReturn(new TransferOperationDto(OPERATION_UUID, 500, TransferOperationStatus.COMPLETED));
 
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.uuid").value(OPERATION_UUID.toString()))
@@ -70,9 +76,27 @@ class TransferControllerTest {
 	}
 
 	@Test
+	void rejectsRequestWithoutIdempotencyKey() throws Exception {
+		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(BODY))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void rejectsMalformedIdempotencyKey() throws Exception {
+		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", "not-a-uuid")
+						.content(BODY))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void rejectsNonPositiveAmount() throws Exception {
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"toLogin": "user2", "amount": 0}
 								"""))
@@ -85,6 +109,7 @@ class TransferControllerTest {
 	void rejectsBlankRecipient() throws Exception {
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content("""
 								{"toLogin": " ", "amount": 500}
 								"""))
@@ -95,23 +120,38 @@ class TransferControllerTest {
 
 	@Test
 	void translatesRejectionFromAccounts() throws Exception {
-		when(transferService.transfer("user1", "user2", 500))
+		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
 
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isUnprocessableContent())
 				.andExpect(jsonPath("$.code").value("insufficient_funds"));
 	}
 
 	@Test
+	void reportsDuplicateRequest() throws Exception {
+		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
+				.thenThrow(new DuplicateRequestException(IDEMPOTENCY_KEY));
+
+		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
+						.content(BODY))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("duplicate_request"));
+	}
+
+	@Test
 	void hidesTransactionConflictBehindInternalError() throws Exception {
-		when(transferService.transfer("user1", "user2", 500))
+		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.thenThrow(new TransactionRejectedException("transaction_conflict", "Already applied"));
 
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isInternalServerError())
 				.andExpect(jsonPath("$.code").value("internal_error"));
@@ -119,11 +159,12 @@ class TransferControllerTest {
 
 	@Test
 	void reportsAccountsUnavailability() throws Exception {
-		when(transferService.transfer("user1", "user2", 500))
+		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.thenThrow(new AccountsServiceUnavailableException(new RuntimeException("boom")));
 
 		mockMvc.perform(post("/api/transfers").with(user("user1", "transfer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isServiceUnavailable())
 				.andExpect(jsonPath("$.code").value("accounts_unavailable"));

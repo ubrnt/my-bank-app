@@ -29,6 +29,8 @@ spring:
     default-schema: transfer
 
 mybank:
+  transfer:
+    pending-timeout: 30s
   notifications:
     outbox:
       poll-interval: 5s

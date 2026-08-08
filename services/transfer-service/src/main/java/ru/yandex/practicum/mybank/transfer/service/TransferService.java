@@ -6,6 +6,8 @@ import ru.yandex.practicum.mybank.transfer.client.AccountsClient;
 import ru.yandex.practicum.mybank.transfer.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.transfer.client.dto.TransactionRequest;
 import ru.yandex.practicum.mybank.transfer.client.dto.TransactionResponse;
+import ru.yandex.practicum.mybank.transfer.domain.TransferOperation;
+import ru.yandex.practicum.mybank.transfer.domain.TransferOperationStatus;
 import ru.yandex.practicum.mybank.transfer.service.dto.TransferOperationDto;
 
 import java.util.UUID;
@@ -23,22 +25,29 @@ public class TransferService {
 		this.journal = journal;
 	}
 
-	public TransferOperationDto transfer(String fromLogin, String toLogin, long amount) {
-		UUID transactionUuid = UUID.randomUUID();
+	public TransferOperationDto transfer(UUID idempotencyKey, String fromLogin, String toLogin, long amount) {
+		TransferOperation operation = journal.tryAcquireClaim(idempotencyKey, amount)
+				.or(() -> journal.findSettledOrExpired(idempotencyKey))
+				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
+
+		if (operation.getStatus() == TransferOperationStatus.COMPLETED) {
+			return TransferOperationDto.of(operation);
+		}
 
 		TransactionResponse transaction;
 		try {
-			transaction = accountsClient.transfer(new TransactionRequest(transactionUuid, fromLogin, toLogin, amount));
+			transaction = accountsClient.transfer(
+					new TransactionRequest(operation.getUuid(), fromLogin, toLogin, amount));
 		} catch (TransactionRejectedException e) {
-			journal.fail(transactionUuid, amount, e.getCode());
+			journal.fail(operation.getId(), e.getCode());
 
 			throw e;
 		} catch (ServiceCallException e) {
-			journal.fail(transactionUuid, amount, ACCOUNTS_UNAVAILABLE);
+			journal.fail(operation.getId(), ACCOUNTS_UNAVAILABLE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}
 
-		return TransferOperationDto.of(journal.complete(transactionUuid, amount, transaction));
+		return TransferOperationDto.of(journal.complete(operation.getId(), transaction));
 	}
 }

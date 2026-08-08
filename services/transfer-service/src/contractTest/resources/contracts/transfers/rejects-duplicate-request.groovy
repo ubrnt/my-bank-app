@@ -3,27 +3,27 @@ package contracts.transfers
 import org.springframework.cloud.contract.spec.Contract
 
 Contract.make {
-	description "rejects a transfer where the recipient is the sender"
+	description "rejects a repeated request while the first one is still being processed"
 	priority 1
 	request {
 		method POST()
 		url "/api/transfers"
 		headers {
 			contentType(applicationJson())
-			header("Idempotency-Key", $(consumer(regex(uuid())), producer("cccccccc-3333-3333-3333-555555555555")))
+			header("Idempotency-Key", "eeeeeeee-1111-1111-1111-111111111111")
 		}
 		body(
-				toLogin: "user1",
+				toLogin: "user2",
 				amount: 500
 		)
 	}
 	response {
-		status UNPROCESSABLE_ENTITY()
+		status CONFLICT()
 		headers {
 			contentType(applicationJson())
 		}
 		body(
-				code: "same_account",
+				code: "duplicate_request",
 				message: $(anyNonBlankString())
 		)
 	}
