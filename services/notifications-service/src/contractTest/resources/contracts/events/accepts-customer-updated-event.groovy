@@ -16,7 +16,7 @@ Contract.make {
 				type: "customer_updated",
 				recipientUuid: $(anyUuid()),
 				payload: [
-						uuid: $(anyUuid())
+						customerUuid: $(anyUuid())
 				]
 		)
 	}
