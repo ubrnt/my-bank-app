@@ -64,7 +64,7 @@ class NotificationsContractIntegrationTest {
 								.claim("scope", "customer:write")))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"name": "Иванов Иван", "birthdate": "1990-01-15"}
+								{"name": "Иванов Игорь", "birthdate": "1990-01-15"}
 								"""))
 				.andExpect(status().isOk());
 

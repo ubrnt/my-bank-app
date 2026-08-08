@@ -11,6 +11,7 @@ import ru.yandex.practicum.mybank.accounts.repository.AccountRepository;
 import ru.yandex.practicum.mybank.accounts.repository.CustomerRepository;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerAccountDto;
 import ru.yandex.practicum.mybank.accounts.service.dto.CustomerDto;
+import ru.yandex.practicum.mybank.accounts.service.dto.CustomerUpdatedPayloadDto;
 import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxService;
 
 import java.time.LocalDate;
@@ -53,14 +54,17 @@ public class CustomerService {
 		CustomerAccount customerAccount = loadCustomerAccount(login);
 
 		Customer customer = customerAccount.customer();
+		boolean changed = !name.equals(customer.getName()) || !birthdate.equals(customer.getBirthdate());
+
 		customer.setName(name);
 		customer.setBirthdate(birthdate);
 
-		CustomerAccountDto dto = toDto(customerAccount);
-		notificationsOutboxService.save(EventType.CUSTOMER_UPDATED.name(), AggregateType.CUSTOMER.name(), customer.getId(),
-				customer.getUuid(), toDto(customer));
+		if (changed) {
+			notificationsOutboxService.save(EventType.CUSTOMER_UPDATED.name(), AggregateType.CUSTOMER.name(),
+					customer.getId(), customer.getUuid(), new CustomerUpdatedPayloadDto(customer.getUuid()));
+		}
 
-		return dto;
+		return toDto(customerAccount);
 	}
 
 	private CustomerAccount loadCustomerAccount(String login) {

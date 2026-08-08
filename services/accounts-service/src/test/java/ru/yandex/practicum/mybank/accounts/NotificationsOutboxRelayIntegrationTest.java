@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
+	private static final String PAYLOAD_JSON = "{\"customerUuid\": \"%s\"}";
+
 	@Autowired
 	private NotificationsOutboxRelay notificationsOutboxRelay;
 
@@ -57,9 +59,10 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 		NotificationRequest sent = captor.getValue();
 		assertThat(sent.eventUuid()).isEqualTo(eventUuid);
 		assertThat(sent.type()).isEqualTo(EventType.CUSTOMER_UPDATED.name().toLowerCase(Locale.ROOT));
-		assertThat(sent.recipientUuid()).isEqualTo(UUID.fromString(
-				jdbcTemplate.queryForObject("select uuid from customers where login = 'user1'", String.class)));
-		assertThat(sent.payload()).contains("Иванов Игорь");
+		UUID customerUuid = UUID.fromString(
+				jdbcTemplate.queryForObject("select uuid from customers where login = 'user1'", String.class));
+		assertThat(sent.recipientUuid()).isEqualTo(customerUuid);
+		assertThat(sent.payload()).isEqualTo(PAYLOAD_JSON.formatted(customerUuid));
 
 		Map<String, Object> processed = event();
 		assertThat(processed).containsEntry("status", "PROCESSED").containsEntry("attempts", 0);
