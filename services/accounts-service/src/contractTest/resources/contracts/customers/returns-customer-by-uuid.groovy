@@ -17,7 +17,7 @@ Contract.make {
 		}
 		body(
 				login: "user1",
-				name: "user1_first_name user1_last_name"
+				name: "Иванов Иван"
 		)
 	}
 }

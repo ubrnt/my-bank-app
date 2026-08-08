@@ -78,11 +78,11 @@ public abstract class ContractsBase {
 		CustomerService customerService = mock(CustomerService.class);
 
 		when(customerService.getCustomerAccount("user1")).thenReturn(new CustomerAccountDto("user1",
-				"user1_first_name user1_last_name", LocalDate.of(1990, 1, 15), USER1_NUMBER, 25000));
+				"Иванов Иван", LocalDate.of(1990, 1, 15), USER1_NUMBER, 25000));
 		when(customerService.findOthers("user1")).thenReturn(List.of(
-				new CustomerDto(USER2_CUSTOMER_UUID, "user2", "user2_first_name user2_last_name")));
+				new CustomerDto(USER2_CUSTOMER_UUID, "user2", "Петров Пётр")));
 		when(customerService.getCustomer(any())).thenAnswer(invocation ->
-				new CustomerDto(invocation.getArgument(0), "user1", "user1_first_name user1_last_name"));
+				new CustomerDto(invocation.getArgument(0), "user1", "Иванов Иван"));
 		doThrow(new CustomerAccountNotFoundException(UNKNOWN_CUSTOMER_UUID))
 				.when(customerService).getCustomer(UNKNOWN_CUSTOMER_UUID);
 

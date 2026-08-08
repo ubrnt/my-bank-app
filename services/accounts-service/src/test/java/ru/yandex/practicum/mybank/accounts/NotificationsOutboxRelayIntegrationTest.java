@@ -40,7 +40,7 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 								.claim("scope", "customer:write")))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"name": "user1_new_first_name user1_new_last_name", "birthdate": "1990-01-15"}
+								{"name": "Иванов Игорь", "birthdate": "1990-01-15"}
 								"""))
 				.andExpect(status().isOk());
 	}
@@ -59,7 +59,7 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 		assertThat(sent.type()).isEqualTo(EventType.CUSTOMER_UPDATED.name().toLowerCase(Locale.ROOT));
 		assertThat(sent.recipientUuid()).isEqualTo(UUID.fromString(
 				jdbcTemplate.queryForObject("select uuid from customers where login = 'user1'", String.class)));
-		assertThat(sent.payload()).contains("user1_new_first_name user1_new_last_name");
+		assertThat(sent.payload()).contains("Иванов Игорь");
 
 		Map<String, Object> processed = event();
 		assertThat(processed).containsEntry("status", "PROCESSED").containsEntry("attempts", 0);

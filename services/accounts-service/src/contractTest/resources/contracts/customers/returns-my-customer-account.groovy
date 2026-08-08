@@ -15,7 +15,7 @@ Contract.make {
 		}
 		body(
 				login: "user1",
-				name: "user1_first_name user1_last_name",
+				name: "Иванов Иван",
 				birthdate: "1990-01-15",
 				number: "40817810000000000001",
 				balance: 25000

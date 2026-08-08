@@ -54,7 +54,7 @@ class CustomerControllerTest {
 	@Test
 	void returnsOwnAccountByLoginFromToken() throws Exception {
 		when(customerService.getCustomerAccount("user1")).thenReturn(new CustomerAccountDto(
-				"user1", "user1_first_name user1_last_name", LocalDate.of(1990, 1, 15), "40817810000000000001", 100000));
+				"user1", "Иванов Иван", LocalDate.of(1990, 1, 15), "40817810000000000001", 100000));
 
 		mockMvc.perform(get("/api/customers/me").with(user("user1", "customer:read")))
 				.andExpect(status().isOk())
@@ -66,12 +66,12 @@ class CustomerControllerTest {
 	@Test
 	void returnsOthersWithoutAccounts() throws Exception {
 		when(customerService.findOthers(anyString()))
-				.thenReturn(List.of(new CustomerDto(CUSTOMER_UUID, "user2", "user2_first_name user2_last_name")));
+				.thenReturn(List.of(new CustomerDto(CUSTOMER_UUID, "user2", "Петров Пётр")));
 
 		mockMvc.perform(get("/api/customers/others").with(user("user1", "customer:others:read")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].login").value("user2"))
-				.andExpect(jsonPath("$[0].name").value("user2_first_name user2_last_name"))
+				.andExpect(jsonPath("$[0].name").value("Петров Пётр"))
 				.andExpect(jsonPath("$[0].number").doesNotExist())
 				.andExpect(jsonPath("$[0].balance").doesNotExist());
 	}
@@ -82,7 +82,7 @@ class CustomerControllerTest {
 						.with(user("user1", "customer:write"))
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
-								{"name": "user1_first_name user1_last_name", "birthdate": "2020-01-15"}
+								{"name": "Иванов Иван", "birthdate": "2020-01-15"}
 								"""))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("validation_error"))

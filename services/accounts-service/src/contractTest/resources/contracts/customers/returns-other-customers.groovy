@@ -16,7 +16,7 @@ Contract.make {
 		body([
 				[
 						login: "user2",
-						name : "user2_first_name user2_last_name"
+						name : "Петров Пётр"
 				]
 		])
 	}
