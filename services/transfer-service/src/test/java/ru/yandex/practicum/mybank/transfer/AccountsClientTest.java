@@ -80,7 +80,7 @@ class AccountsClientTest {
 		assertThatThrownBy(() -> accountsClient.transfer(request()))
 				.isInstanceOf(ServiceCallException.class);
 
-		accounts.verify(3, postRequestedFor(urlEqualTo(TRANSFER_URL)));
+		accounts.verify(2, postRequestedFor(urlEqualTo(TRANSFER_URL)));
 	}
 
 	private static TransactionRequest request() {

@@ -20,7 +20,7 @@ public class AccountsClient {
 	}
 
 	@Retryable(includes = ServiceCallException.class,
-			maxRetriesString = "${mybank.accounts.retry.max-retries:2}",
+			maxRetriesString = "${mybank.accounts.retry.max-retries:1}",
 			delayString = "${mybank.accounts.retry.delay:200ms}",
 			multiplierString = "${mybank.accounts.retry.multiplier:2}")
 	public TransactionResponse transfer(TransactionRequest request) {
