@@ -64,12 +64,12 @@ public class CashOperation extends BaseEntity {
 		return customerLogin;
 	}
 
-	public UUID getAccountUuid() {
-		return accountUuid;
-	}
-
 	public UUID getCustomerUuid() {
 		return customerUuid;
+	}
+
+	public UUID getAccountUuid() {
+		return accountUuid;
 	}
 
 	public CashOperationType getType() {
