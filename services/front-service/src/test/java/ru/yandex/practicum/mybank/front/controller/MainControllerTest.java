@@ -160,7 +160,8 @@ class MainControllerTest {
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
-				.andExpect(model().attribute("errors", List.of("Операция уже выполняется, обновите страницу")));
+				.andExpect(model().attribute("errors",
+						List.of("Операция ещё выполняется. Подождите немного и нажмите кнопку ещё раз")));
 	}
 
 	@Test
