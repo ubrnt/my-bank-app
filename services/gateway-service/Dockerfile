@@ -3,10 +3,10 @@ WORKDIR /app
 COPY gradle/ gradle/
 COPY gradlew settings.gradle build.gradle ./
 COPY services/gateway-service/build.gradle services/gateway-service/build.gradle
-RUN ./gradlew --no-daemon :gateway-service:resolveDependencies
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon :gateway-service:resolveDependencies
 
 COPY services/gateway-service/src services/gateway-service/src
-RUN ./gradlew --no-daemon -x test :gateway-service:bootJar
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon -x test :gateway-service:bootJar
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

@@ -6,11 +6,11 @@ COPY libs/bank-chassis/build.gradle libs/bank-chassis/build.gradle
 COPY libs/bank-persistence-starter/build.gradle libs/bank-persistence-starter/build.gradle
 COPY libs/bank-notifications-outbox-starter/build.gradle libs/bank-notifications-outbox-starter/build.gradle
 COPY services/notifications-service/build.gradle services/notifications-service/build.gradle
-RUN ./gradlew --no-daemon :notifications-service:resolveDependencies
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon :notifications-service:resolveDependencies
 
 COPY libs/ libs/
 COPY services/notifications-service/src services/notifications-service/src
-RUN ./gradlew --no-daemon -x test :notifications-service:bootJar
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon -x test :notifications-service:bootJar
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

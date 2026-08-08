@@ -6,11 +6,11 @@ COPY libs/bank-chassis/build.gradle libs/bank-chassis/build.gradle
 COPY libs/bank-persistence-starter/build.gradle libs/bank-persistence-starter/build.gradle
 COPY libs/bank-notifications-outbox-starter/build.gradle libs/bank-notifications-outbox-starter/build.gradle
 COPY services/cash-service/build.gradle services/cash-service/build.gradle
-RUN ./gradlew --no-daemon :cash-service:resolveDependencies
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon :cash-service:resolveDependencies
 
 COPY libs/ libs/
 COPY services/cash-service/src services/cash-service/src
-RUN ./gradlew --no-daemon -x test :cash-service:bootJar
+RUN --mount=type=cache,target=/root/.gradle,sharing=locked ./gradlew --no-daemon -x test :cash-service:bootJar
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
