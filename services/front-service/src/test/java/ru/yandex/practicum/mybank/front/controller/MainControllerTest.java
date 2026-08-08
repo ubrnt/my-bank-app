@@ -117,7 +117,7 @@ class MainControllerTest {
 						.param("value", "300")
 						.param("login", "user2"))
 				.andExpect(status().isOk())
-				.andExpect(model().attribute("info", "Успешно переведено 300 руб клиенту user2"));
+				.andExpect(model().attribute("info", "Успешно переведено 300 руб клиенту Петров Пётр"));
 
 		verify(gatewayClient).transfer(IDEMPOTENCY_KEY, new TransferRequest("user2", 300));
 	}

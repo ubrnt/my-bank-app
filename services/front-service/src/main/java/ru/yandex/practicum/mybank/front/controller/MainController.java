@@ -100,7 +100,9 @@ public class MainController {
 			@RequestParam("login") String login
 	) {
 		gatewayClient.transfer(idempotencyKey, new TransferRequest(login, value));
-		fillModel(model, List.of(), messages.infoMessage("info.transferred", value, login), UUID.randomUUID());
+
+		List<AccountDto> accounts = fillModel(model, List.of(), null, UUID.randomUUID());
+		model.addAttribute("info", messages.infoMessage("info.transferred", value, nameByLogin(accounts, login)));
 
 		return "main";
 	}
@@ -124,19 +126,28 @@ public class MainController {
 		return messages.infoMessage("info.withdrawn", value);
 	}
 
+	private String nameByLogin(List<AccountDto> accounts, String login) {
+		return accounts.stream()
+				.filter(account -> account.login().equals(login))
+				.map(AccountDto::name)
+				.findFirst()
+				.orElse(login);
+	}
+
 	private UUID submittedKey(HttpServletRequest request) {
 		String submitted = request.getParameter("idempotencyKey");
 
 		return submitted != null ? UUID.fromString(submitted) : UUID.randomUUID();
 	}
 
-	private void fillModel(Model model, List<String> errors, String info, UUID idempotencyKey) {
+	private List<AccountDto> fillModel(Model model, List<String> errors, String info, UUID idempotencyKey) {
 		List<String> allErrors = new ArrayList<>(errors);
+		List<AccountDto> accounts = List.of();
 
 		try {
 			CustomerResponse customer = gatewayClient.getCustomer();
 
-			List<AccountDto> accounts = gatewayClient.getOtherCustomers().stream()
+			accounts = gatewayClient.getOtherCustomers().stream()
 					.map(other -> new AccountDto(other.login(), other.name()))
 					.toList();
 
@@ -151,5 +162,7 @@ public class MainController {
 		model.addAttribute("errors", allErrors.isEmpty() ? null : allErrors);
 		model.addAttribute("info", info);
 		model.addAttribute("idempotencyKey", idempotencyKey);
+
+		return accounts;
 	}
 }
