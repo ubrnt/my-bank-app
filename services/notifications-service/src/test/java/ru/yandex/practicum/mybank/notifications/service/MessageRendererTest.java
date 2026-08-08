@@ -54,7 +54,7 @@ class MessageRendererTest {
 	void rendersProfileUpdate() {
 		JsonNode payload = jsonMapper.readTree("""
 				{"uuid": "3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111", "login": "user1",
-				 "name": "user1_first_name user1_last_name"}
+				 "name": "Иванов Иван"}
 				""");
 
 		assertThat(messageRenderer.render(EventType.CUSTOMER_UPDATED, payload))

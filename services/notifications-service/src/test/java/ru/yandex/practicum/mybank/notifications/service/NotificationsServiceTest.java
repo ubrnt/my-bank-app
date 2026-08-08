@@ -54,7 +54,7 @@ class NotificationsServiceTest {
 	@Test
 	void resolvesRecipientRendersAndSaves() {
 		when(accountsClient.getCustomer(RECIPIENT_UUID))
-				.thenReturn(new CustomerResponse("user1", "user1_first_name user1_last_name"));
+				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
 		when(messageRenderer.render(EventType.MONEY_DEPOSITED, payload)).thenReturn(MESSAGE);
 		when(notificationRepository.insertIfAbsent(any(), any(), any(), anyString(), anyString(), anyString()))
 				.thenReturn(Optional.of(notification()));
@@ -70,7 +70,7 @@ class NotificationsServiceTest {
 	@Test
 	void acceptsDuplicateSilently() {
 		when(accountsClient.getCustomer(RECIPIENT_UUID))
-				.thenReturn(new CustomerResponse("user1", "user1_first_name user1_last_name"));
+				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
 		when(messageRenderer.render(any(), any())).thenReturn(MESSAGE);
 		when(notificationRepository.insertIfAbsent(any(), any(), any(), anyString(), anyString(), anyString()))
 				.thenReturn(Optional.empty());
