@@ -27,3 +27,9 @@ spring:
 mybank:
   oauth2:
     end-session-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/logout
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gateway-service:
+        base-config: default

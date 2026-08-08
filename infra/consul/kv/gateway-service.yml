@@ -1,3 +1,7 @@
+spring:
+  reactor:
+    context-propagation: auto
+
 resilience4j:
   circuitbreaker:
     instances:
