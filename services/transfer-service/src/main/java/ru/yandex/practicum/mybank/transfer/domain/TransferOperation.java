@@ -14,11 +14,14 @@ import java.util.UUID;
 @Table(name = "transfer_operations")
 public class TransferOperation extends BaseEntity {
 
-	@Column(name = "from_account_uuid")
-	private UUID fromAccountUuid;
+	@Column(name = "from_customer_login", nullable = false, updatable = false)
+	private String fromCustomerLogin;
 
 	@Column(name = "from_customer_uuid")
 	private UUID fromCustomerUuid;
+
+	@Column(name = "from_account_uuid")
+	private UUID fromAccountUuid;
 
 	@Column(name = "to_account_uuid")
 	private UUID toAccountUuid;
@@ -39,8 +42,9 @@ public class TransferOperation extends BaseEntity {
 	protected TransferOperation() {
 	}
 
-	public TransferOperation(UUID uuid, long amount) {
+	public TransferOperation(UUID uuid, String fromCustomerLogin, long amount) {
 		super(uuid);
+		this.fromCustomerLogin = fromCustomerLogin;
 		this.amount = amount;
 		this.status = TransferOperationStatus.PENDING;
 	}
@@ -57,6 +61,10 @@ public class TransferOperation extends BaseEntity {
 	public void fail(String failureReason) {
 		this.status = TransferOperationStatus.FAILED;
 		this.failureReason = failureReason;
+	}
+
+	public String getFromCustomerLogin() {
+		return fromCustomerLogin;
 	}
 
 	public UUID getFromAccountUuid() {

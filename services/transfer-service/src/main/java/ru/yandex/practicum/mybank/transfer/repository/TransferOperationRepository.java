@@ -20,10 +20,10 @@ public interface TransferOperationRepository extends JpaRepository<TransferOpera
 	Optional<TransferOperation> findSettledOrExpired(UUID uuid, long pendingTimeoutSeconds);
 
 	@Query(value = """
-			insert into transfer_operations (uuid, amount, status, created_ts, updated_ts, version)
-			values (:uuid, :amount, 'PENDING', now(), now(), 0)
+			insert into transfer_operations (uuid, from_customer_login, amount, status, created_ts, updated_ts, version)
+			values (:uuid, :fromCustomerLogin, :amount, 'PENDING', now(), now(), 0)
 			on conflict do nothing
 			returning *
 			""", nativeQuery = true)
-	Optional<TransferOperation> insertIfAbsent(UUID uuid, long amount);
+	Optional<TransferOperation> insertIfAbsent(UUID uuid, String fromCustomerLogin, long amount);
 }

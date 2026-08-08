@@ -199,8 +199,8 @@ class TransferOrchestrationIntegrationTest {
 
 	private void insertPendingOperation(UUID uuid, int ageSeconds) {
 		jdbcTemplate.update("""
-				insert into transfer_operations (uuid, amount, status, created_ts, updated_ts, version)
-				values (?, 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
+				insert into transfer_operations (uuid, from_customer_login, amount, status, created_ts, updated_ts, version)
+				values (?, 'user1', 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
 				""", uuid, ageSeconds);
 	}
 
@@ -212,6 +212,7 @@ class TransferOrchestrationIntegrationTest {
 		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from transfer_operations");
 		assertThat(operation.get("status")).isEqualTo("FAILED");
 		assertThat(operation.get("failure_reason")).isEqualTo(reason);
+		assertThat(operation.get("from_customer_login")).isEqualTo("user1");
 		assertThat(operation.get("from_account_uuid")).isNull();
 		assertThat(operation.get("to_account_uuid")).isNull();
 

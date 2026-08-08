@@ -36,8 +36,8 @@ public class TransferOperationJournal {
 	}
 
 	@Transactional
-	public Optional<TransferOperation> tryAcquireClaim(UUID uuid, long amount) {
-		return transferOperationRepository.insertIfAbsent(uuid, amount);
+	public Optional<TransferOperation> tryAcquireClaim(UUID uuid, String fromCustomerLogin, long amount) {
+		return transferOperationRepository.insertIfAbsent(uuid, fromCustomerLogin, amount);
 	}
 
 	@Transactional
