@@ -1,4 +1,4 @@
-name: my-bank-infra
+name: my-bank
 
 services:
   postgres:
