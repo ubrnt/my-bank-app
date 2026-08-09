@@ -43,7 +43,9 @@ public class AccountsClient {
 					.body(request)
 					.retrieve()
 					.body(TransactionResponse.class);
-		} catch (HttpClientErrorException.UnprocessableContent | HttpClientErrorException.Conflict e) {
+		} catch (HttpClientErrorException.NotFound
+				| HttpClientErrorException.UnprocessableContent
+				| HttpClientErrorException.Conflict e) {
 			ErrorResponse error = e.getResponseBodyAs(ErrorResponse.class);
 
 			throw new TransactionRejectedException(error.code(), error.message());

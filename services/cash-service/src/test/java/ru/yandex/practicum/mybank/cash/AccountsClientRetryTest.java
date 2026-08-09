@@ -70,6 +70,21 @@ class AccountsClientRetryTest {
 	}
 
 	@Test
+	void missingAccountIsReportedAsRejection() {
+		accounts.stubFor(post(urlEqualTo("/api/transactions/deposit"))
+				.willReturn(aResponse()
+						.withStatus(404)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{\"code\":\"customer_account_not_found\",\"message\":\"No account\"}")));
+
+		assertThatThrownBy(() -> accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500)))
+				.isInstanceOf(TransactionRejectedException.class)
+				.hasFieldOrPropertyWithValue("code", "customer_account_not_found");
+
+		accounts.verify(1, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
+	}
+
+	@Test
 	void conflictingTransactionIsReportedAsRejection() {
 		accounts.stubFor(post(urlEqualTo("/api/transactions/deposit"))
 				.willReturn(aResponse()
