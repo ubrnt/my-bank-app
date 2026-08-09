@@ -12,12 +12,24 @@ public interface CashOperationRepository extends JpaRepository<CashOperation, Lo
 	Optional<CashOperation> findByUuid(UUID uuid);
 
 	@Query(value = """
-			select * from cash_operations
+			update cash_operations
+			set status = 'PENDING',
+			    failure_reason = null,
+			    customer_uuid = null,
+			    account_uuid = null,
+			    updated_ts = now(),
+			    version = version + 1
 			where uuid = :uuid
+			  and customer_login = :customerLogin
+			  and type = :type
+			  and amount = :amount
+			  and status <> 'COMPLETED'
 			  and (status <> 'PENDING'
-			       or updated_ts < now() - (cast(:pendingTimeoutSeconds as double precision) * interval '1 second'))
+			       or updated_ts < now() - make_interval(secs => :pendingTimeoutSeconds))
+			returning *
 			""", nativeQuery = true)
-	Optional<CashOperation> findSettledOrExpired(UUID uuid, long pendingTimeoutSeconds);
+	Optional<CashOperation> reclaimIfSettledOrExpired(UUID uuid, String customerLogin, String type, long amount,
+			long pendingTimeoutSeconds);
 
 	@Query(value = """
 			insert into cash_operations (uuid, customer_login, type, amount, status, created_ts, updated_ts, version)

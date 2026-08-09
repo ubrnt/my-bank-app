@@ -36,8 +36,8 @@ public class CashService {
 	}
 
 	private CashOperationDto process(CashOperationType type, UUID idempotencyKey, String login, long amount) {
-		CashOperation operation = journal.tryAcquireClaim(idempotencyKey, login, type, amount)
-				.or(() -> journal.findSettledOrExpired(idempotencyKey))
+		CashOperation operation = journal.tryClaim(idempotencyKey, login, type, amount)
+				.or(() -> journal.tryReclaim(idempotencyKey, login, type, amount))
 				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
 
 		if (operation.getStatus() == CashOperationStatus.COMPLETED) {

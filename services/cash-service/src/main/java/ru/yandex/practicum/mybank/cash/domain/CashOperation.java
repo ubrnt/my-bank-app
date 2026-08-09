@@ -48,6 +48,10 @@ public class CashOperation extends BaseEntity {
 		this.status = CashOperationStatus.PENDING;
 	}
 
+	public boolean matches(String customerLogin, CashOperationType type, long amount) {
+		return this.customerLogin.equals(customerLogin) && this.type == type && this.amount == amount;
+	}
+
 	public void complete(UUID accountUuid, UUID customerUuid) {
 		this.accountUuid = accountUuid;
 		this.customerUuid = customerUuid;

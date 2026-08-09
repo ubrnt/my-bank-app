@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.cash.client.dto.TransactionResponse;
 import ru.yandex.practicum.mybank.cash.domain.AggregateType;
 import ru.yandex.practicum.mybank.cash.domain.CashOperation;
+import ru.yandex.practicum.mybank.cash.domain.CashOperationStatus;
 import ru.yandex.practicum.mybank.cash.domain.CashOperationType;
 import ru.yandex.practicum.mybank.cash.domain.EventType;
 import ru.yandex.practicum.mybank.cash.repository.CashOperationRepository;
@@ -31,14 +32,28 @@ public class CashOperationJournal {
 		this.pendingTimeout = pendingTimeout;
 	}
 
-	public Optional<CashOperation> findSettledOrExpired(UUID uuid) {
-		return cashOperationRepository.findSettledOrExpired(uuid, pendingTimeout.toSeconds());
+
+	@Transactional
+	public Optional<CashOperation> tryClaim(UUID uuid, String customerLogin, CashOperationType type,
+			long amount) {
+		return cashOperationRepository.insertIfAbsent(uuid, customerLogin, type.name(), amount);
 	}
 
 	@Transactional
-	public Optional<CashOperation> tryAcquireClaim(UUID uuid, String customerLogin, CashOperationType type,
-			long amount) {
-		return cashOperationRepository.insertIfAbsent(uuid, customerLogin, type.name(), amount);
+	public Optional<CashOperation> tryReclaim(UUID uuid, String customerLogin, CashOperationType type, long amount) {
+		Optional<CashOperation> reclaimed = cashOperationRepository
+				.reclaimIfSettledOrExpired(uuid, customerLogin, type.name(), amount, pendingTimeout.toSeconds());
+
+		if (reclaimed.isPresent()) {
+			return reclaimed;
+		}
+
+		CashOperation claimed = cashOperationRepository.findByUuid(uuid).orElseThrow();
+		if (!claimed.matches(customerLogin, type, amount)) {
+			throw new IdempotencyKeyConflictException(uuid);
+		}
+
+		return Optional.of(claimed).filter(operation -> operation.getStatus() == CashOperationStatus.COMPLETED);
 	}
 
 	@Transactional

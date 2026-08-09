@@ -68,4 +68,19 @@ class AccountsClientRetryTest {
 
 		accounts.verify(1, postRequestedFor(urlEqualTo("/api/transactions/withdraw")));
 	}
+
+	@Test
+	void conflictingTransactionIsReportedAsRejection() {
+		accounts.stubFor(post(urlEqualTo("/api/transactions/deposit"))
+				.willReturn(aResponse()
+						.withStatus(409)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{\"code\":\"transaction_conflict\",\"message\":\"Already applied with other details\"}")));
+
+		assertThatThrownBy(() -> accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500)))
+				.isInstanceOf(TransactionRejectedException.class)
+				.hasFieldOrPropertyWithValue("code", "transaction_conflict");
+
+		accounts.verify(1, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
+	}
 }

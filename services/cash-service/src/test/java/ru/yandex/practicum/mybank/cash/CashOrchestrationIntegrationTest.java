@@ -18,6 +18,7 @@ import ru.yandex.practicum.mybank.cash.domain.CashOperationStatus;
 import ru.yandex.practicum.mybank.cash.service.AccountsServiceUnavailableException;
 import ru.yandex.practicum.mybank.cash.service.CashService;
 import ru.yandex.practicum.mybank.cash.service.DuplicateRequestException;
+import ru.yandex.practicum.mybank.cash.service.IdempotencyKeyConflictException;
 import ru.yandex.practicum.mybank.cash.service.dto.CashOperationDto;
 import ru.yandex.practicum.mybank.chassis.client.ServiceCallException;
 
@@ -28,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -155,6 +157,54 @@ class CashOrchestrationIntegrationTest {
 	}
 
 	@Test
+	void repeatWithOtherAmountIsRejected() {
+		when(accountsClient.deposit(any()))
+				.thenThrow(new TransactionRejectedException("balance_limit_exceeded", "Too much money"));
+
+		assertThatThrownBy(() -> cashService.deposit(IDEMPOTENCY_KEY, "user1", Long.MAX_VALUE))
+				.isInstanceOf(TransactionRejectedException.class);
+
+		assertThatThrownBy(() -> cashService.deposit(IDEMPOTENCY_KEY, "user1", 600))
+				.isInstanceOf(IdempotencyKeyConflictException.class);
+
+		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from cash_operations");
+		assertThat(operation.get("status")).isEqualTo("FAILED");
+		assertThat(operation.get("amount")).isEqualTo(Long.MAX_VALUE);
+
+		verify(accountsClient).deposit(any());
+		assertThat(operationCount()).isOne();
+	}
+
+	@Test
+	void repeatWithOtherActionIsRejected() {
+		when(accountsClient.deposit(any()))
+				.thenThrow(new TransactionRejectedException("balance_limit_exceeded", "Too much money"));
+
+		assertThatThrownBy(() -> cashService.deposit(IDEMPOTENCY_KEY, "user1", 500))
+				.isInstanceOf(TransactionRejectedException.class);
+
+		assertThatThrownBy(() -> cashService.withdraw(IDEMPOTENCY_KEY, "user1", 500))
+				.isInstanceOf(IdempotencyKeyConflictException.class);
+
+		verify(accountsClient, never()).withdraw(any());
+		assertThat(operationCount()).isOne();
+	}
+
+	@Test
+	void repeatOfCompletedOperationWithOtherAmountIsRejected() {
+		when(accountsClient.deposit(any()))
+				.thenAnswer(invocation -> response(invocation.getArgument(0, TransactionRequest.class), "deposit"));
+
+		cashService.deposit(IDEMPOTENCY_KEY, "user1", 500);
+
+		assertThatThrownBy(() -> cashService.deposit(IDEMPOTENCY_KEY, "user1", 600))
+				.isInstanceOf(IdempotencyKeyConflictException.class);
+
+		verify(accountsClient).deposit(any());
+		assertThat(operationCount()).isOne();
+	}
+
+	@Test
 	void repeatWhileFirstRequestIsInFlightIsRejected() {
 		insertPendingOperation(IDEMPOTENCY_KEY, 0);
 
@@ -185,7 +235,7 @@ class CashOrchestrationIntegrationTest {
 	private void insertPendingOperation(UUID uuid, int ageSeconds) {
 		jdbcTemplate.update("""
 				insert into cash_operations (uuid, customer_login, type, amount, status, created_ts, updated_ts, version)
-				values (?, 'user1', 'DEPOSIT', 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
+				values (?, 'user1', 'DEPOSIT', 500, 'PENDING', now(), now() - make_interval(secs => ?), 0)
 				""", uuid, ageSeconds);
 	}
 
