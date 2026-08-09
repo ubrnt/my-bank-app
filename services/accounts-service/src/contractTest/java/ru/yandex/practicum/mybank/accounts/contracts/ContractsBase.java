@@ -79,6 +79,9 @@ public abstract class ContractsBase {
 
 		when(customerService.getCustomerAccount("user1")).thenReturn(new CustomerAccountDto("user1",
 				"Иванов Иван", LocalDate.of(1990, 1, 15), USER1_NUMBER, 25000));
+		when(customerService.updateProfile(eq("user1"), any(), any())).thenAnswer(invocation ->
+				new CustomerAccountDto("user1", invocation.getArgument(1), invocation.getArgument(2),
+						USER1_NUMBER, 25000));
 		when(customerService.findOthers("user1")).thenReturn(List.of(
 				new CustomerDto(USER2_CUSTOMER_UUID, "user2", "Петров Пётр")));
 		when(customerService.getCustomer(any())).thenAnswer(invocation ->
