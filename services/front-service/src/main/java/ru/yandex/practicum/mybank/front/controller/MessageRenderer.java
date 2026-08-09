@@ -51,7 +51,7 @@ public class MessageRenderer {
 		return text;
 	}
 
-	private String errorMessage(String key) {
+	public String errorMessage(String key) {
 		String text = messageSource.getMessage(key, null, null, Locale.ROOT);
 
 		return text != null ? text : unknownErrorMessage();

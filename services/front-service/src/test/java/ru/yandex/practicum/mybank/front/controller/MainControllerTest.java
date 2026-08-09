@@ -218,6 +218,21 @@ class MainControllerTest {
 	}
 
 	@Test
+	void keepsOperationErrorWhenCustomerCannotBeReadEither() throws Exception {
+		rejectWithdrawal(new ErrorResponse("service_unavailable", "Down", null));
+		when(gatewayClient.getCustomer())
+				.thenThrow(new GatewayException(new ErrorResponse("accounts_unavailable", "Down", null),
+						new RuntimeException()));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Сервис временно недоступен")));
+	}
+
+	@Test
 	void showsErrorWhenCustomerCannotBeRead() throws Exception {
 		when(gatewayClient.getCustomer())
 				.thenThrow(new GatewayException(new ErrorResponse("accounts_unavailable", "Down", null),
@@ -226,6 +241,46 @@ class MainControllerTest {
 		mockMvc.perform(get("/account").with(oidcLogin()))
 				.andExpect(status().isOk())
 				.andExpect(model().attribute("errors", List.of("Сервис счетов временно недоступен")));
+	}
+
+	@Test
+	void showsBalanceLimitWhenDepositedAmountExceedsLongRange() throws Exception {
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "99999999999999999999999999")
+						.param("action", "PUT"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("В наш банк столько денег не поместится")));
+	}
+
+	@Test
+	void showsInsufficientFundsWhenWithdrawnAmountExceedsLongRange() throws Exception {
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "99999999999999999999999999")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Недостаточно средств на счёте")));
+	}
+
+	@Test
+	void showsInsufficientFundsWhenTransferredAmountExceedsLongRange() throws Exception {
+		mockMvc.perform(post("/transfer").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "99999999999999999999999999")
+						.param("login", "user2"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Недостаточно средств на счёте")));
+	}
+
+	@Test
+	void showsAmountErrorWhenAmountIsNegative() throws Exception {
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "-99999999999999999999999999")
+						.param("action", "PUT"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Сумма должна быть больше нуля")));
 	}
 
 	@Test

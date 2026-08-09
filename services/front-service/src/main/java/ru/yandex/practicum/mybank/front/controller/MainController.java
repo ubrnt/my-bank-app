@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import ru.yandex.practicum.mybank.front.client.GatewayClient;
 import ru.yandex.practicum.mybank.front.client.GatewayException;
 import ru.yandex.practicum.mybank.front.client.dto.CashRequest;
@@ -20,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -109,9 +111,40 @@ public class MainController {
 
 	@ExceptionHandler(GatewayException.class)
 	public String handleGatewayFailure(GatewayException exception, HttpServletRequest request, Model model) {
-		fillModel(model, messages.errorMessages(exception), null, submittedKey(request));
+		UUID idempotencyKey = submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
+
+		fillModel(model, messages.errorMessages(exception), null, idempotencyKey);
 
 		return "main";
+	}
+
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	public String handleBadParameter(MethodArgumentTypeMismatchException exception, HttpServletRequest request,
+			Model model) {
+		String errorKey = errorKey(exception, request);
+		UUID idempotencyKey = submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
+
+		fillModel(model, List.of(messages.errorMessage(errorKey)), null, idempotencyKey);
+
+		return "main";
+	}
+
+	private String errorKey(MethodArgumentTypeMismatchException exception, HttpServletRequest request) {
+		return switch (exception.getName()) {
+			case "value" -> amountErrorKey(String.valueOf(exception.getValue()), request);
+			case "birthdate" -> "error.field.birthdate";
+			default -> "error.unknown";
+		};
+	}
+
+	private String amountErrorKey(String submitted, HttpServletRequest request) {
+		if (!submitted.matches("\\d+")) {
+			return "error.field.amount";
+		}
+
+		return CashAction.PUT.name().equals(request.getParameter("action"))
+				? "error.balance_limit_exceeded"
+				: "error.insufficient_funds";
 	}
 
 	private String deposit(UUID idempotencyKey, long value) {
@@ -134,10 +167,18 @@ public class MainController {
 				.orElse(login);
 	}
 
-	private UUID submittedKey(HttpServletRequest request) {
+	private Optional<UUID> submittedIdempotencyKey(HttpServletRequest request) {
 		String submitted = request.getParameter("idempotencyKey");
 
-		return submitted != null ? UUID.fromString(submitted) : UUID.randomUUID();
+		if (submitted == null) {
+			return Optional.empty();
+		}
+
+		try {
+			return Optional.of(UUID.fromString(submitted));
+		} catch (IllegalArgumentException e) {
+			return Optional.empty();
+		}
 	}
 
 	private List<AccountDto> fillModel(Model model, List<String> errors, String info, UUID idempotencyKey) {
@@ -156,7 +197,9 @@ public class MainController {
 			model.addAttribute("sum", customer.balance());
 			model.addAttribute("accounts", accounts);
 		} catch (GatewayException exception) {
-			allErrors.addAll(messages.errorMessages(exception));
+			if (allErrors.isEmpty()) {
+				allErrors.addAll(messages.errorMessages(exception));
+			}
 		}
 
 		model.addAttribute("errors", allErrors.isEmpty() ? null : allErrors);

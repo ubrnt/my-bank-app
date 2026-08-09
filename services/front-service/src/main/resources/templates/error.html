@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="utf-8">
+    <title>Банк</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+</head>
+
+<body class="bg-light">
+    <div class="container p-2">
+        <div class="row p-2">
+            <div class="col">
+                <h2>
+                    <span class="badge text-bg-info text-white">Банк</span>
+                </h2>
+            </div>
+        </div>
+        <div class="row p-2">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body vstack gap-3">
+                        <h4 class="card-title" th:if="${status == 404}">Страница не найдена</h4>
+                        <h4 class="card-title" th:unless="${status == 404}">Что-то пошло не так, попробуйте позже</h4>
+                        <span class="text-secondary" th:text="${status}"/>
+                        <a class="btn btn-outline-secondary align-self-start" th:href="@{/account}">На главную</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

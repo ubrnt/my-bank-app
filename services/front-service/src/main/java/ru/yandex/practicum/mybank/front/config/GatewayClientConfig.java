@@ -1,26 +1,20 @@
 package ru.yandex.practicum.mybank.front.config;
 
-import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
-import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
-import org.springframework.security.oauth2.client.web.client.OAuth2ClientHttpRequestInterceptor;
 import org.springframework.web.client.RestClient;
+import ru.yandex.practicum.mybank.chassis.client.CircuitBreakerPolicy;
+import ru.yandex.practicum.mybank.chassis.client.ServiceClientFactory;
 
 @Configuration
 public class GatewayClientConfig {
 
+	private static final String GATEWAY_SERVICE_ID = "gateway-service";
 	private static final String REGISTRATION_ID = "keycloak";
-
-	@Bean
-	@LoadBalanced
-	public RestClient.Builder loadBalancedRestClientBuilder(RestClientBuilderConfigurer configurer) {
-		return configurer.configure(RestClient.builder());
-	}
 
 	@Bean
 	public OAuth2AuthorizedClientManager authorizedClientManager(ClientRegistrationRepository clientRegistrations,
@@ -29,13 +23,7 @@ public class GatewayClientConfig {
 	}
 
 	@Bean
-	public RestClient gatewayRestClient(RestClient.Builder builder, OAuth2AuthorizedClientManager clientManager) {
-		OAuth2ClientHttpRequestInterceptor tokenInterceptor = new OAuth2ClientHttpRequestInterceptor(clientManager);
-		tokenInterceptor.setClientRegistrationIdResolver(request -> REGISTRATION_ID);
-
-		return builder.clone()
-				.baseUrl("http://gateway-service")
-				.requestInterceptor(tokenInterceptor)
-				.build();
+	public RestClient gatewayRestClient(ServiceClientFactory factory) {
+		return factory.restClient(GATEWAY_SERVICE_ID, REGISTRATION_ID, CircuitBreakerPolicy.TRANSPORT_ONLY);
 	}
 }
