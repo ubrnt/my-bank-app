@@ -1,5 +1,7 @@
 package ru.yandex.practicum.mybank.cash.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,10 +16,14 @@ import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 @RestControllerAdvice
 public class ApiExceptionHandler extends BaseExceptionHandler {
 
+	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
 	@ExceptionHandler(TransactionRejectedException.class)
 	public ResponseEntity<ErrorResponse> handleTransactionRejected(TransactionRejectedException exception) {
+		log.warn("Accounts rejected the operation: {}", exception.getMessage());
+
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
-				.body(new ErrorResponse(exception.getCode(), exception.getMessage()));
+				.body(new ErrorResponse(exception.getCode(), "Operation rejected by accounts-service"));
 	}
 
 	@ExceptionHandler(IdempotencyKeyConflictException.class)
