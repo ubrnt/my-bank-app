@@ -1,6 +1,13 @@
 spring:
   reactor:
     context-propagation: auto
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 15s
 
 resilience4j:
   circuitbreaker:
