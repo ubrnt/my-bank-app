@@ -20,7 +20,8 @@ public class SecurityConfig {
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.authorizeExchange(exchanges -> exchanges
 						.pathMatchers(HttpMethod.GET, healthPath).permitAll()
-						.pathMatchers("/api/customers/**", "/api/cash/**", "/api/transfers/**").authenticated()
+						.pathMatchers("/api/customers/me", "/api/customers/others", "/api/cash/**",
+								"/api/transfers/**").authenticated()
 						.anyExchange().denyAll())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 				.build();

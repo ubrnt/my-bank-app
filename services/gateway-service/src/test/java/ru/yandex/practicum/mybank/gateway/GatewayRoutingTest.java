@@ -85,6 +85,29 @@ class GatewayRoutingTest {
 	}
 
 	@Test
+	void routesCustomersOthersToAccountsService() {
+		accounts.stubFor(get(urlEqualTo("/api/customers/others"))
+				.willReturn(jsonResponse("[{\"login\":\"user2\"}]")));
+
+		client.get().uri("/api/customers/others")
+				.header(HttpHeaders.AUTHORIZATION, BEARER)
+				.exchange()
+				.expectStatus().isOk();
+
+		accounts.verify(getRequestedFor(urlEqualTo("/api/customers/others")));
+	}
+
+	@Test
+	void rejectsCustomerLookupByUuid() {
+		client.get().uri("/api/customers/3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111")
+				.header(HttpHeaders.AUTHORIZATION, BEARER)
+				.exchange()
+				.expectStatus().isForbidden();
+
+		accounts.verify(0, anyRequestedFor(anyUrl()));
+	}
+
+	@Test
 	void routesCashToCashService() {
 		cash.stubFor(post(urlEqualTo("/api/cash/deposit"))
 				.willReturn(jsonResponse("{\"uuid\":\"11111111-1111-1111-1111-111111111111\"}")));
