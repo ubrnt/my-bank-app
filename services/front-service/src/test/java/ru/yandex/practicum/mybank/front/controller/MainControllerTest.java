@@ -7,6 +7,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import ru.yandex.practicum.mybank.front.client.GatewayClient;
 import ru.yandex.practicum.mybank.front.client.GatewayException;
 import ru.yandex.practicum.mybank.front.client.dto.CashRequest;
@@ -21,8 +22,10 @@ import ru.yandex.practicum.mybank.front.controller.dto.AccountDto;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -133,10 +136,15 @@ class MainControllerTest {
 	}
 
 	@Test
-	void rendersAnIdempotencyKeyForTheForms() throws Exception {
-		mockMvc.perform(get("/account").with(oidcLogin()))
+	void differentIdempotencyKeyForEachForm() throws Exception {
+		MvcResult result = mockMvc.perform(get("/account").with(oidcLogin()))
 				.andExpect(status().isOk())
-				.andExpect(model().attributeExists("idempotencyKey"));
+				.andExpect(model().attributeExists("cashIdempotencyKey"))
+				.andExpect(model().attributeExists("transferIdempotencyKey"))
+				.andReturn();
+
+		Map<String, Object> model = result.getModelAndView().getModel();
+		assertThat(model.get("cashIdempotencyKey")).isNotEqualTo(model.get("transferIdempotencyKey"));
 	}
 
 	@Test
@@ -146,11 +154,11 @@ class MainControllerTest {
 						.param("value", "100")
 						.param("action", "PUT"))
 				.andExpect(status().isOk())
-				.andExpect(model().attribute("idempotencyKey", not(IDEMPOTENCY_KEY)));
+				.andExpect(model().attribute("cashIdempotencyKey", not(IDEMPOTENCY_KEY)));
 	}
 
 	@Test
-	void echoesTheKeyAfterFailedOperation() throws Exception {
+	void keepsCashKeyWhenCashFails() throws Exception {
 		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", null));
 
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
@@ -158,7 +166,23 @@ class MainControllerTest {
 						.param("value", "100")
 						.param("action", "GET"))
 				.andExpect(status().isOk())
-				.andExpect(model().attribute("idempotencyKey", IDEMPOTENCY_KEY));
+				.andExpect(model().attribute("cashIdempotencyKey", IDEMPOTENCY_KEY))
+				.andExpect(model().attribute("transferIdempotencyKey", not(IDEMPOTENCY_KEY)));
+	}
+
+	@Test
+	void keepsTransferKeyWhenTransferFails() throws Exception {
+		doThrow(new GatewayException(new ErrorResponse("insufficient_funds", "Not enough money", null),
+				new RuntimeException()))
+				.when(gatewayClient).transfer(any(), any());
+
+		mockMvc.perform(post("/transfer").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("login", "user2"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("transferIdempotencyKey", IDEMPOTENCY_KEY))
+				.andExpect(model().attribute("cashIdempotencyKey", not(IDEMPOTENCY_KEY)));
 	}
 
 	@Test
@@ -184,7 +208,7 @@ class MainControllerTest {
 						.param("action", "GET"))
 				.andExpect(status().isOk())
 				.andExpect(model().attribute("errors", List.of("Данные операции изменились. Отправьте ещё раз")))
-				.andExpect(model().attribute("idempotencyKey", not(IDEMPOTENCY_KEY)));
+				.andExpect(model().attribute("cashIdempotencyKey", not(IDEMPOTENCY_KEY)));
 	}
 
 	@Test

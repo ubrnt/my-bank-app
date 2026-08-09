@@ -50,6 +50,7 @@ import java.util.UUID;
 public class MainController {
 
 	private static final String IDEMPOTENCY_KEY_CONFLICT = "idempotency_key_conflict";
+	private static final String CASH_PATH = "/cash";
 
 	private final GatewayClient gatewayClient;
 
@@ -67,7 +68,7 @@ public class MainController {
 
 	@GetMapping("/account")
 	public String getAccount(Model model) {
-		fillModel(model, List.of(), null, UUID.randomUUID());
+		fillModel(model, List.of(), null, newKeys());
 
 		return "main";
 	}
@@ -79,7 +80,7 @@ public class MainController {
 			@RequestParam("birthdate") LocalDate birthdate
 	) {
 		gatewayClient.updateCustomer(new UpdateProfileRequest(name, birthdate));
-		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"), UUID.randomUUID());
+		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"), newKeys());
 
 		return "main";
 	}
@@ -92,7 +93,7 @@ public class MainController {
 			@RequestParam("action") CashAction action
 	) {
 		String info = action == CashAction.PUT ? deposit(idempotencyKey, value) : withdraw(idempotencyKey, value);
-		fillModel(model, List.of(), info, UUID.randomUUID());
+		fillModel(model, List.of(), info, newKeys());
 
 		return "main";
 	}
@@ -106,7 +107,7 @@ public class MainController {
 	) {
 		gatewayClient.transfer(idempotencyKey, new TransferRequest(login, value));
 
-		List<AccountDto> accounts = fillModel(model, List.of(), null, UUID.randomUUID());
+		List<AccountDto> accounts = fillModel(model, List.of(), null, newKeys());
 		model.addAttribute("info", messages.infoMessage("info.transferred", value, nameByLogin(accounts, login)));
 
 		return "main";
@@ -114,9 +115,7 @@ public class MainController {
 
 	@ExceptionHandler(GatewayException.class)
 	public String handleGatewayFailure(GatewayException exception, HttpServletRequest request, Model model) {
-		UUID idempotencyKey = keyAfterFailure(exception, request);
-
-		fillModel(model, messages.errorMessages(exception), null, idempotencyKey);
+		fillModel(model, messages.errorMessages(exception), null, keysAfterFailure(exception, request));
 
 		return "main";
 	}
@@ -125,9 +124,8 @@ public class MainController {
 	public String handleBadParameter(MethodArgumentTypeMismatchException exception, HttpServletRequest request,
 			Model model) {
 		String errorKey = errorKey(exception, request);
-		UUID idempotencyKey = submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
 
-		fillModel(model, List.of(messages.errorMessage(errorKey)), null, idempotencyKey);
+		fillModel(model, List.of(messages.errorMessage(errorKey)), null, keysForRetry(request));
 
 		return "main";
 	}
@@ -170,14 +168,26 @@ public class MainController {
 				.orElse(login);
 	}
 
-	private UUID keyAfterFailure(GatewayException exception, HttpServletRequest request) {
+	private IdempotencyKeys keysAfterFailure(GatewayException exception, HttpServletRequest request) {
 		ErrorResponse response = exception.getResponse();
 
 		if (response != null && IDEMPOTENCY_KEY_CONFLICT.equals(response.code())) {
-			return UUID.randomUUID();
+			return newKeys();
 		}
 
-		return submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
+		return keysForRetry(request);
+	}
+
+	private IdempotencyKeys keysForRetry(HttpServletRequest request) {
+		UUID submitted = submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
+
+		return CASH_PATH.equals(request.getRequestURI())
+				? new IdempotencyKeys(submitted, UUID.randomUUID())
+				: new IdempotencyKeys(UUID.randomUUID(), submitted);
+	}
+
+	private IdempotencyKeys newKeys() {
+		return new IdempotencyKeys(UUID.randomUUID(), UUID.randomUUID());
 	}
 
 	private Optional<UUID> submittedIdempotencyKey(HttpServletRequest request) {
@@ -194,7 +204,7 @@ public class MainController {
 		}
 	}
 
-	private List<AccountDto> fillModel(Model model, List<String> errors, String info, UUID idempotencyKey) {
+	private List<AccountDto> fillModel(Model model, List<String> errors, String info, IdempotencyKeys keys) {
 		List<String> allErrors = new ArrayList<>(errors);
 		List<AccountDto> accounts = List.of();
 
@@ -217,8 +227,15 @@ public class MainController {
 
 		model.addAttribute("errors", allErrors.isEmpty() ? null : allErrors);
 		model.addAttribute("info", info);
-		model.addAttribute("idempotencyKey", idempotencyKey);
+		model.addAttribute("cashIdempotencyKey", keys.cash());
+		model.addAttribute("transferIdempotencyKey", keys.transfer());
 
 		return accounts;
+	}
+
+	private record IdempotencyKeys(
+			UUID cash,
+			UUID transfer
+	) {
 	}
 }
