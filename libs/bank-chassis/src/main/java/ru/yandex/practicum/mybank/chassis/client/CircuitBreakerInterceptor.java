@@ -24,9 +24,9 @@ public class CircuitBreakerInterceptor implements ClientHttpRequestInterceptor {
 		this.policy = policy;
 	}
 
-	@SuppressWarnings("NullableProblems")
-    @Override
-	public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) {
+	@Override
+	public ClientHttpResponse intercept(@NonNull HttpRequest request, @NonNull byte[] body,
+			@NonNull ClientHttpRequestExecution execution) {
 		return circuitBreakerFactory.create(circuitBreakerId).run(
 				() -> {
 					try {

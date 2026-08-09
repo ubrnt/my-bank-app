@@ -36,9 +36,7 @@ public abstract class BaseExceptionHandler extends ResponseEntityExceptionHandle
 
 	@Override
 	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException exception,
-																  @NonNull HttpHeaders headers,
-																  @NonNull HttpStatusCode status,
-																  @NonNull WebRequest request) {
+			@NonNull HttpHeaders headers, @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 		List<FieldError> fields = exception.getBindingResult().getFieldErrors().stream()
 				.map(error -> new FieldError(error.getField(), error.getDefaultMessage()))
 				.toList();
@@ -51,9 +49,7 @@ public abstract class BaseExceptionHandler extends ResponseEntityExceptionHandle
 
 	@Override
 	protected ResponseEntity<Object> handleExceptionInternal(@NonNull Exception exception, Object body,
-															 @NonNull HttpHeaders headers,
-                                                             HttpStatusCode status,
-															 @NonNull WebRequest request) {
+			@NonNull HttpHeaders headers, @NonNull HttpStatusCode status, @NonNull WebRequest request) {
 		HttpStatus resolved = HttpStatus.resolve(status.value());
 
 		String code = resolved == null ? "error" : resolved.name().toLowerCase();
