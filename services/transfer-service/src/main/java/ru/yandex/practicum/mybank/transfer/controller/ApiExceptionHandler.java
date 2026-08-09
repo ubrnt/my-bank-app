@@ -30,8 +30,10 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 					.body(new ErrorResponse(INTERNAL_ERROR, "Transfer could not be completed"));
 		}
 
+		log.warn("Accounts rejected the transfer: {}", exception.getMessage());
+
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
-				.body(new ErrorResponse(exception.getCode(), exception.getMessage()));
+				.body(new ErrorResponse(exception.getCode(), "Transfer rejected by accounts-service"));
 	}
 
 	@ExceptionHandler(IdempotencyKeyConflictException.class)
