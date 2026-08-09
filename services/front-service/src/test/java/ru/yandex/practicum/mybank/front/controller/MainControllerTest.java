@@ -99,6 +99,16 @@ class MainControllerTest {
 	}
 
 	@Test
+	void groupsThousandsInTheSuccessMessage() throws Exception {
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "10000")
+						.param("action", "PUT"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("info", "Положено 10\u00A0000 руб"));
+	}
+
+	@Test
 	void withdrawsCash() throws Exception {
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
 						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())

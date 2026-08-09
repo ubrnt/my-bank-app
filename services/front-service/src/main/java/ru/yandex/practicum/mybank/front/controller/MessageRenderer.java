@@ -42,7 +42,7 @@ public class MessageRenderer {
 	}
 
 	public @Nullable String infoMessage(String key, Object... args) {
-		String text = messageSource.getMessage(key, args, null, Locale.ROOT);
+		String text = messageSource.getMessage(key, args, null, Locale.of("ru"));
 
 		if (text == null) {
 			log.warn("No message for key {}", key);
@@ -52,12 +52,12 @@ public class MessageRenderer {
 	}
 
 	public String errorMessage(String key) {
-		String text = messageSource.getMessage(key, null, null, Locale.ROOT);
+		String text = messageSource.getMessage(key, null, null, Locale.of("ru"));
 
 		return text != null ? text : unknownErrorMessage();
 	}
 
 	private String unknownErrorMessage() {
-		return messageSource.getMessage(UNKNOWN_ERROR, null, Locale.ROOT);
+		return messageSource.getMessage(UNKNOWN_ERROR, null, Locale.of("ru"));
 	}
 }
