@@ -18,6 +18,14 @@ public abstract class BaseExceptionHandler extends ResponseEntityExceptionHandle
 
 	private static final Logger log = LoggerFactory.getLogger(BaseExceptionHandler.class);
 
+	@ExceptionHandler(MissingUsernameClaimException.class)
+	public ResponseEntity<ErrorResponse> handleMissingLoginClaim(MissingUsernameClaimException exception) {
+		log.warn("Rejecting a request: {}", exception.getMessage());
+
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.body(new ErrorResponse("invalid_token", exception.getMessage()));
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {
 		log.error("Unhandled exception", exception);
