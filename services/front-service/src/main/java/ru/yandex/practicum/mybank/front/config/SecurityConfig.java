@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mybank.front.config;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ public class SecurityConfig {
 		String healthPath = endpoints.getBasePath() + "/health/**";
 		return http
 				.authorizeHttpRequests(requests -> requests
+						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers(HttpMethod.GET, healthPath).permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(Customizer.withDefaults())
