@@ -24,6 +24,7 @@ notifications: the sender writes an event to a transactional outbox and a relay 
 - [Test](#test)
 - [API](#api)
 - [Security](#security)
+- [Resilience](#resilience)
 - [Idempotency](#idempotency)
 - [Storage](#storage)
 - [Left out on purpose](#left-out-on-purpose)
@@ -177,6 +178,26 @@ Logs:
 docker compose logs -f cash-service
 ```
 
+The traceId travels with the synchronous REST calls, so one click looks like this across the
+services it touches. Incoming requests are logged as `received` and `handled`, outgoing calls as
+`calling`, `finished` or `failed`, and breakers report their own changes as
+`circuit breaker cash-service: CLOSED -> OPEN`:
+
+```
+front-service-1     | 2026-08-09T09:15:03.945Z  INFO 1 --- [front-service] [nio-8080-exec-1] [6a77ce5300add6189b677fce55b050b9,f598187514eeff2f] r.y.p.m.c.web.RequestLoggingFilter       : received POST /cash
+front-service-1     | 2026-08-09T09:15:03.946Z DEBUG 1 --- [front-service] [nio-8080-exec-1] [6a77ce5300add6189b677fce55b050b9,557c0e3488bccf93] r.y.p.m.c.c.ClientLoggingInterceptor     : calling gateway-service POST /api/cash/deposit
+gateway-service-1  | 2026-08-09T09:15:03.950Z  INFO 1 --- [gateway-service] [     parallel-1] [6a77ce5300add6189b677fce55b050b9,1b20782cc66d6f67] r.y.p.m.g.web.RequestLoggingFilter       : received POST /api/cash/deposit
+cash-service-1      | 2026-08-09T09:15:03.955Z  INFO 1 --- [cash-service] [nio-8084-exec-4] [6a77ce5300add6189b677fce55b050b9,89ff90193cf4deb6] r.y.p.m.c.web.RequestLoggingFilter       : received POST /api/cash/deposit
+cash-service-1      | 2026-08-09T09:15:03.959Z DEBUG 1 --- [cash-service] [nio-8084-exec-4] [6a77ce5300add6189b677fce55b050b9,1520736e032c36e1] r.y.p.m.c.c.ClientLoggingInterceptor     : calling accounts-service POST /api/transactions/deposit
+accounts-service-1  | 2026-08-09T09:15:03.963Z  INFO 1 --- [accounts-service] [nio-8082-exec-7] [6a77ce5300add6189b677fce55b050b9,fdbd03b3d7d3fd4f] r.y.p.m.c.web.RequestLoggingFilter       : received POST /api/transactions/deposit
+accounts-service-1  | 2026-08-09T09:15:03.970Z  INFO 1 --- [accounts-service] [nio-8082-exec-7] [6a77ce5300add6189b677fce55b050b9,fdbd03b3d7d3fd4f] r.y.p.m.c.web.RequestLoggingFilter       : handled POST /api/transactions/deposit 200 in 6 ms
+cash-service-1      | 2026-08-09T09:15:03.972Z DEBUG 1 --- [cash-service] [nio-8084-exec-4] [6a77ce5300add6189b677fce55b050b9,1520736e032c36e1] r.y.p.m.c.c.ClientLoggingInterceptor     : finished accounts-service POST /api/transactions/deposit 200 OK in 12 ms
+cash-service-1      | 2026-08-09T09:15:03.976Z  INFO 1 --- [cash-service] [nio-8084-exec-4] [6a77ce5300add6189b677fce55b050b9,89ff90193cf4deb6] r.y.p.m.c.web.RequestLoggingFilter       : handled POST /api/cash/deposit 200 in 21 ms
+gateway-service-1  | 2026-08-09T09:15:03.979Z  INFO 1 --- [gateway-service] [ctor-http-nio-2] [6a77ce5300add6189b677fce55b050b9,1b20782cc66d6f67] r.y.p.m.g.web.RequestLoggingFilter       : handled POST /api/cash/deposit 200 OK in 28 ms
+front-service-1     | 2026-08-09T09:15:03.980Z DEBUG 1 --- [front-service] [nio-8080-exec-1] [6a77ce5300add6189b677fce55b050b9,557c0e3488bccf93] r.y.p.m.c.c.ClientLoggingInterceptor     : finished gateway-service POST /api/cash/deposit 200 OK in 33 ms
+front-service-1     | 2026-08-09T09:15:04.020Z  INFO 1 --- [front-service] [nio-8080-exec-1] [6a77ce5300add6189b677fce55b050b9,f598187514eeff2f] r.y.p.m.c.web.RequestLoggingFilter       : handled POST /cash 200 in 74 ms
+```
+
 ### Locally, service by service
 
 Infrastructure first, then the services:
@@ -302,6 +323,22 @@ a missing scope gives `403`.
 | `notifications-service` | accounts | `customer:any:read` |
 
 Client secrets come from the environment. Dev defaults live in `docker-profile.env`.
+
+## Resilience
+
+The table below shows how service interactions are protected: what the circuit breaker of that call
+counts as a failure, whether the call is retried, and the timeouts it runs under.
+
+| Call | Breaker counts as failure | Retries | Timeouts (per attempt) |
+|------|---------------------------|---------|------------------------|
+| `front-service` → `gateway-service` | no response | none | connect 2s, read 25s, limit 30s |
+| `gateway-service` → `accounts`, `cash`, `transfer` | no response | none | connect 2s, response 15s, limit 20s |
+| `cash-service`, `transfer-service` → `accounts-service` | no response, or 5xx | 2 attempts, 200ms apart | connect 2s, read 5s, limit 10s |
+| `accounts`, `cash`, `transfer` → `notifications-service` | no response, or 5xx | next relay pass | connect 2s, read 5s, limit 10s |
+| `notifications-service` → `accounts-service` | no response, or 5xx | none | connect 2s, read 5s, limit 10s |
+
+All breakers share the same thresholds: a window of 10 calls, evaluated once 5 of them are in, open
+at a failure rate of 50%, open for 30s, then 3 probe calls decide whether to close again.
 
 ## Idempotency
 
