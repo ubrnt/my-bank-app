@@ -33,7 +33,7 @@ public class TransactionsService {
 	}
 
 	public TransactionDto deposit(UUID transactionUuid, String login, long amount) {
-		TransactionClaim claim = tryAcquireClaim(transactionUuid, TransactionType.DEPOSIT);
+		TransactionClaim claim = tryClaim(transactionUuid, TransactionType.DEPOSIT);
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
@@ -55,7 +55,7 @@ public class TransactionsService {
 	}
 
 	public TransactionDto withdraw(UUID transactionUuid, String login, long amount) {
-		TransactionClaim claim = tryAcquireClaim(transactionUuid, TransactionType.WITHDRAW);
+		TransactionClaim claim = tryClaim(transactionUuid, TransactionType.WITHDRAW);
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
@@ -81,7 +81,7 @@ public class TransactionsService {
 			throw new SameAccountException(fromLogin);
 		}
 
-		TransactionClaim claim = tryAcquireClaim(transactionUuid, TransactionType.TRANSFER);
+		TransactionClaim claim = tryClaim(transactionUuid, TransactionType.TRANSFER);
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
@@ -115,7 +115,7 @@ public class TransactionsService {
 		return toTransferDto(transaction, withdrawal, deposit);
 	}
 
-	private TransactionClaim tryAcquireClaim(UUID transactionUuid, TransactionType type) {
+	private TransactionClaim tryClaim(UUID transactionUuid, TransactionType type) {
 		Optional<Transaction> claimed = transactionRepository.insertIfAbsent(transactionUuid, type.name());
 		if (claimed.isPresent()) {
 			return new TransactionClaim(claimed.get(), true);

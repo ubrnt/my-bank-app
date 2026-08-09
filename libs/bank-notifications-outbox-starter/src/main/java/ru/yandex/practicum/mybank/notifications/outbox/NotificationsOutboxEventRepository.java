@@ -14,7 +14,7 @@ public class NotificationsOutboxEventRepository {
 			 where id in (
 			       select id from notifications_outbox
 			        where status = 'PENDING'
-			           or (status = 'PROCESSING' and locked_at < now() - :staleTimeoutSeconds * interval '1 second')
+			           or (status = 'PROCESSING' and locked_at < now() - make_interval(secs => :staleTimeoutSeconds))
 			        order by id
 			        limit :batchSize
 			        for update skip locked
