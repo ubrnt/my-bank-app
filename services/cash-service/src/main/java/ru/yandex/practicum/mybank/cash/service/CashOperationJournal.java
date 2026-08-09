@@ -32,7 +32,6 @@ public class CashOperationJournal {
 		this.pendingTimeout = pendingTimeout;
 	}
 
-
 	@Transactional
 	public Optional<CashOperation> tryClaim(UUID uuid, String customerLogin, CashOperationType type,
 			long amount) {
