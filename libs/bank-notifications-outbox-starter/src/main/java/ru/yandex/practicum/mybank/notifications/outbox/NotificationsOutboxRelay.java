@@ -14,7 +14,8 @@ public class NotificationsOutboxRelay {
 
 	private final BatchProcessor<NotificationsOutboxEvent> processor;
 
-	public NotificationsOutboxRelay(NotificationsOutboxService notificationsOutboxService, NotificationsClient notificationsClient) {
+	public NotificationsOutboxRelay(NotificationsOutboxService notificationsOutboxService,
+			NotificationsClient notificationsClient) {
 		this.processor = new BatchProcessor<>(
 				notificationsOutboxService::claim,
 				event -> notificationsClient.send(new NotificationRequest(

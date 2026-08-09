@@ -14,8 +14,8 @@ public class NotificationsOutboxService {
 	private final ObjectMapper objectMapper;
 	private final NotificationsOutboxProperties properties;
 
-	public NotificationsOutboxService(NotificationsOutboxEventRepository notificationsOutboxEventRepository, ObjectMapper objectMapper,
-			NotificationsOutboxProperties properties) {
+	public NotificationsOutboxService(NotificationsOutboxEventRepository notificationsOutboxEventRepository,
+			ObjectMapper objectMapper, NotificationsOutboxProperties properties) {
 		this.notificationsOutboxEventRepository = notificationsOutboxEventRepository;
 		this.objectMapper = objectMapper;
 		this.properties = properties;

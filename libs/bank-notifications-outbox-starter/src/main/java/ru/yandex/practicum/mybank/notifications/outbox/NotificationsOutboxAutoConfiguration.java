@@ -26,7 +26,8 @@ public class NotificationsOutboxAutoConfiguration {
 	}
 
 	@Bean
-	public NotificationsOutboxService notificationsOutboxService(NotificationsOutboxEventRepository notificationsOutboxEventRepository, ObjectMapper objectMapper,
+	public NotificationsOutboxService notificationsOutboxService(
+			NotificationsOutboxEventRepository notificationsOutboxEventRepository, ObjectMapper objectMapper,
 			NotificationsOutboxProperties properties) {
 		return new NotificationsOutboxService(notificationsOutboxEventRepository, objectMapper, properties);
 	}
