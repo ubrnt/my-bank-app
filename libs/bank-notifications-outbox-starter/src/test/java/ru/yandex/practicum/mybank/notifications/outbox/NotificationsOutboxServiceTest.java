@@ -26,6 +26,7 @@ class NotificationsOutboxServiceTest {
 	private static final int MAX_ATTEMPTS = 8;
 	private static final Duration RETRY_DELAY = Duration.ofSeconds(5);
 	private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
+	private static final Instant NOW = Instant.parse("2026-08-09T12:00:00Z");
 
 	private record CustomerPayload(UUID uuid, String login, String name) {
 	}
@@ -64,6 +65,7 @@ class NotificationsOutboxServiceTest {
 	void retriesWhileAttemptsAreLeft() {
 		NotificationsOutboxEvent event = eventWithFailedAttempts(0);
 		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
+		when(notificationsOutboxEventRepository.currentTimestamp()).thenReturn(NOW);
 
 		notificationsOutboxService.markNotDelivered(1L, ERROR);
 
@@ -76,25 +78,23 @@ class NotificationsOutboxServiceTest {
 	void postponesEveryRetryFurtherThanThePrevious() {
 		NotificationsOutboxEvent event = eventWithFailedAttempts(2);
 		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
-		Instant before = Instant.now();
+		when(notificationsOutboxEventRepository.currentTimestamp()).thenReturn(NOW);
 
 		notificationsOutboxService.markNotDelivered(1L, ERROR);
 
-		Duration expected = RETRY_DELAY.multipliedBy(4);
-		assertThat(event.getNextAttemptAt()).isBetween(before.plus(expected), Instant.now().plus(expected));
+		assertThat(event.getNextAttemptAt()).isEqualTo(NOW.plus(RETRY_DELAY.multipliedBy(4)));
 	}
 
 	@Test
 	void doesNotPostponeRetriesBeyondTheCap() {
 		NotificationsOutboxEvent event = eventWithFailedAttempts(5);
 		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
-		Instant before = Instant.now();
+		when(notificationsOutboxEventRepository.currentTimestamp()).thenReturn(NOW);
 
 		notificationsOutboxService.markNotDelivered(1L, ERROR);
 
 		assertThat(RETRY_DELAY.multipliedBy(32)).isGreaterThan(MAX_RETRY_DELAY);
-		assertThat(event.getNextAttemptAt())
-				.isBetween(before.plus(MAX_RETRY_DELAY), Instant.now().plus(MAX_RETRY_DELAY));
+		assertThat(event.getNextAttemptAt()).isEqualTo(NOW.plus(MAX_RETRY_DELAY));
 	}
 
 	@Test

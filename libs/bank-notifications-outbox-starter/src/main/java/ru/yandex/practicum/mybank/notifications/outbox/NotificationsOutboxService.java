@@ -49,7 +49,7 @@ public class NotificationsOutboxService {
 		} else {
 			Duration retryDelay = calculateRetryDelay(event.getAttempts());
 
-			event.markPending(error, Instant.now().plus(retryDelay));
+			event.markPending(error, notificationsOutboxEventRepository.currentTimestamp().plus(retryDelay));
 		}
 	}
 

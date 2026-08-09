@@ -3,6 +3,7 @@ package ru.yandex.practicum.mybank.notifications.outbox;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,10 @@ public class NotificationsOutboxEventRepository {
 				.setParameter("staleTimeoutSeconds", staleTimeoutSeconds)
 				.setParameter("batchSize", batchSize)
 				.getResultList();
+	}
+
+	public Instant currentTimestamp() {
+		return (Instant) entityManager.createNativeQuery("select clock_timestamp()", Instant.class).getSingleResult();
 	}
 
 	public Optional<NotificationsOutboxEvent> findById(long id) {

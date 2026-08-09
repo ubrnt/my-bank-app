@@ -10,7 +10,7 @@ CREATE TABLE notifications_outbox (
     recipient_uuid  UUID        NOT NULL,
     payload         JSONB       NOT NULL,
     status          VARCHAR(16) NOT NULL,
-    next_attempt_at TIMESTAMPTZ NOT NULL,
+    next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     locked_at       TIMESTAMPTZ,
     processed_at    TIMESTAMPTZ,
     attempts        INTEGER     NOT NULL DEFAULT 0,
