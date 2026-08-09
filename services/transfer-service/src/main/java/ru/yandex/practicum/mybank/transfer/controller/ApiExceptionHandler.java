@@ -11,6 +11,7 @@ import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 import ru.yandex.practicum.mybank.transfer.client.TransactionRejectedException;
 import ru.yandex.practicum.mybank.transfer.service.AccountsServiceUnavailableException;
 import ru.yandex.practicum.mybank.transfer.service.DuplicateRequestException;
+import ru.yandex.practicum.mybank.transfer.service.IdempotencyKeyConflictException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler extends BaseExceptionHandler {
@@ -31,6 +32,12 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
 				.body(new ErrorResponse(exception.getCode(), exception.getMessage()));
+	}
+
+	@ExceptionHandler(IdempotencyKeyConflictException.class)
+	public ResponseEntity<ErrorResponse> handleIdempotencyKeyConflict(IdempotencyKeyConflictException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT)
+				.body(new ErrorResponse("idempotency_key_conflict", exception.getMessage()));
 	}
 
 	@ExceptionHandler(DuplicateRequestException.class)

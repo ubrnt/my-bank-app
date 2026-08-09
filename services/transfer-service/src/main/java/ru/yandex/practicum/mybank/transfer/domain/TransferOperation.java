@@ -49,6 +49,10 @@ public class TransferOperation extends BaseEntity {
 		this.status = TransferOperationStatus.PENDING;
 	}
 
+	public boolean matches(String fromCustomerLogin, long amount) {
+		return this.fromCustomerLogin.equals(fromCustomerLogin) && this.amount == amount;
+	}
+
 	public void complete(UUID fromAccountUuid, UUID fromCustomerUuid, UUID toAccountUuid, UUID toCustomerUuid) {
 		this.fromAccountUuid = fromAccountUuid;
 		this.fromCustomerUuid = fromCustomerUuid;

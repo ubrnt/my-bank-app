@@ -17,6 +17,7 @@ import ru.yandex.practicum.mybank.transfer.client.dto.TransactionResponse;
 import ru.yandex.practicum.mybank.transfer.domain.TransferOperationStatus;
 import ru.yandex.practicum.mybank.transfer.service.AccountsServiceUnavailableException;
 import ru.yandex.practicum.mybank.transfer.service.DuplicateRequestException;
+import ru.yandex.practicum.mybank.transfer.service.IdempotencyKeyConflictException;
 import ru.yandex.practicum.mybank.transfer.service.TransferService;
 import ru.yandex.practicum.mybank.transfer.service.dto.TransferOperationDto;
 import tools.jackson.databind.JsonNode;
@@ -170,6 +171,25 @@ class TransferOrchestrationIntegrationTest {
 	}
 
 	@Test
+	void repeatWithOtherAmountIsRejected() {
+		when(accountsClient.transfer(any()))
+				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
+
+		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
+				.isInstanceOf(TransactionRejectedException.class);
+
+		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 300))
+				.isInstanceOf(IdempotencyKeyConflictException.class);
+
+		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from transfer_operations");
+		assertThat(operation.get("status")).isEqualTo("FAILED");
+		assertThat(operation.get("amount")).isEqualTo(500L);
+
+		verify(accountsClient).transfer(any());
+		assertThat(operationCount()).isOne();
+	}
+
+	@Test
 	void repeatWhileFirstRequestIsInFlightIsRejected() {
 		insertPendingOperation(IDEMPOTENCY_KEY, 0);
 
@@ -200,7 +220,7 @@ class TransferOrchestrationIntegrationTest {
 	private void insertPendingOperation(UUID uuid, int ageSeconds) {
 		jdbcTemplate.update("""
 				insert into transfer_operations (uuid, from_customer_login, amount, status, created_ts, updated_ts, version)
-				values (?, 'user1', 500, 'PENDING', now(), now() - (? * interval '1 second'), 0)
+				values (?, 'user1', 500, 'PENDING', now(), now() - make_interval(secs => ?), 0)
 				""", uuid, ageSeconds);
 	}
 

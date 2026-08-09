@@ -12,12 +12,25 @@ public interface TransferOperationRepository extends JpaRepository<TransferOpera
 	Optional<TransferOperation> findByUuid(UUID uuid);
 
 	@Query(value = """
-			select * from transfer_operations
+			update transfer_operations
+			set status = 'PENDING',
+			    failure_reason = null,
+			    from_customer_uuid = null,
+			    from_account_uuid = null,
+			    to_customer_uuid = null,
+			    to_account_uuid = null,
+			    updated_ts = now(),
+			    version = version + 1
 			where uuid = :uuid
+			  and from_customer_login = :fromCustomerLogin
+			  and amount = :amount
+			  and status <> 'COMPLETED'
 			  and (status <> 'PENDING'
-			       or updated_ts < now() - (cast(:pendingTimeoutSeconds as double precision) * interval '1 second'))
+			       or updated_ts < now() - make_interval(secs => :pendingTimeoutSeconds))
+			returning *
 			""", nativeQuery = true)
-	Optional<TransferOperation> findSettledOrExpired(UUID uuid, long pendingTimeoutSeconds);
+	Optional<TransferOperation> reclaimIfSettledOrExpired(UUID uuid, String fromCustomerLogin, long amount,
+			long pendingTimeoutSeconds);
 
 	@Query(value = """
 			insert into transfer_operations (uuid, from_customer_login, amount, status, created_ts, updated_ts, version)

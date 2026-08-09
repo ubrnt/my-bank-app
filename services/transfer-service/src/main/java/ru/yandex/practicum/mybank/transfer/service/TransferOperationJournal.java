@@ -9,6 +9,7 @@ import ru.yandex.practicum.mybank.transfer.client.dto.TransactionResponse;
 import ru.yandex.practicum.mybank.transfer.domain.AggregateType;
 import ru.yandex.practicum.mybank.transfer.domain.EventType;
 import ru.yandex.practicum.mybank.transfer.domain.TransferOperation;
+import ru.yandex.practicum.mybank.transfer.domain.TransferOperationStatus;
 import ru.yandex.practicum.mybank.transfer.repository.TransferOperationRepository;
 import ru.yandex.practicum.mybank.transfer.service.dto.MoneyEventPayloadDto;
 
@@ -31,13 +32,27 @@ public class TransferOperationJournal {
 		this.pendingTimeout = pendingTimeout;
 	}
 
-	public Optional<TransferOperation> findSettledOrExpired(UUID uuid) {
-		return transferOperationRepository.findSettledOrExpired(uuid, pendingTimeout.toSeconds());
+
+	@Transactional
+	public Optional<TransferOperation> tryClaim(UUID uuid, String fromCustomerLogin, long amount) {
+		return transferOperationRepository.insertIfAbsent(uuid, fromCustomerLogin, amount);
 	}
 
 	@Transactional
-	public Optional<TransferOperation> tryAcquireClaim(UUID uuid, String fromCustomerLogin, long amount) {
-		return transferOperationRepository.insertIfAbsent(uuid, fromCustomerLogin, amount);
+	public Optional<TransferOperation> tryReclaim(UUID uuid, String fromCustomerLogin, long amount) {
+		Optional<TransferOperation> reclaimed = transferOperationRepository
+				.reclaimIfSettledOrExpired(uuid, fromCustomerLogin, amount, pendingTimeout.toSeconds());
+
+		if (reclaimed.isPresent()) {
+			return reclaimed;
+		}
+
+		TransferOperation claimed = transferOperationRepository.findByUuid(uuid).orElseThrow();
+		if (!claimed.matches(fromCustomerLogin, amount)) {
+			throw new IdempotencyKeyConflictException(uuid);
+		}
+
+		return Optional.of(claimed).filter(operation -> operation.getStatus() == TransferOperationStatus.COMPLETED);
 	}
 
 	@Transactional
