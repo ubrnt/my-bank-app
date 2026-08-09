@@ -33,8 +33,6 @@ subprojects {
 
 	tasks.named('test') {
 		useJUnitPlatform()
-		//todo ubrnt remove
-		environment 'TESTCONTAINERS_RYUK_DISABLED', 'true'
 	}
 
 	tasks.register('resolveDependencies') {
