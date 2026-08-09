@@ -77,9 +77,7 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 		mockMvc.perform(post("/api/transactions/transfer")
 						.with(serviceToken())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"transactionUuid": "%s", "fromLogin": "user1", "toLogin": "user2", "amount": 3000}
-								""".formatted(TRANSACTION_UUID)))
+						.content(transfer("user2", 3000)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.operations.length()").value(2))
 				.andExpect(jsonPath("$.operations[*].direction", containsInAnyOrder("withdraw", "deposit")))
@@ -96,6 +94,40 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 		assertThat(countOf("notifications_outbox")).isZero();
 	}
 
+	@Test
+	void repeatedTransferMovesMoneyOnce() throws Exception {
+		transfer3000();
+
+		mockMvc.perform(post("/api/transactions/transfer")
+						.with(serviceToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(transfer("user2", 3000)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.uuid").value(TRANSACTION_UUID))
+				.andExpect(jsonPath("$.operations.length()").value(2))
+				.andExpect(jsonPath("$.operations[*].balanceAfter", containsInAnyOrder(
+						(int) (INITIAL_BALANCE - 3000), (int) (INITIAL_BALANCE + 3000))));
+
+		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE - 3000);
+		assertThat(balanceOf("user2")).isEqualTo(INITIAL_BALANCE + 3000);
+		assertThat(countOf("transactions")).isEqualTo(1);
+		assertThat(countOf("balance_operations")).isEqualTo(2);
+	}
+
+	@Test
+	void rejectsTransferToUnknownUser() throws Exception {
+		mockMvc.perform(post("/api/transactions/transfer")
+						.with(serviceToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(transfer("user404", 3000)))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.code").value("customer_account_not_found"));
+
+		assertThat(balanceOf("user1")).isEqualTo(INITIAL_BALANCE);
+		assertThat(countOf("transactions")).isZero();
+		assertThat(countOf("balance_operations")).isZero();
+	}
+
 	private void deposit5000() throws Exception {
 		mockMvc.perform(post("/api/transactions/deposit")
 						.with(serviceToken())
@@ -108,5 +140,19 @@ class TransactionsApiIntegrationTest extends AbstractIntegrationTest {
 		return """
 				{"transactionUuid": "%s", "login": "user1", "amount": %d}
 				""".formatted(transactionUuid, amount);
+	}
+
+	private void transfer3000() throws Exception {
+		mockMvc.perform(post("/api/transactions/transfer")
+						.with(serviceToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(transfer("user2", 3000)))
+				.andExpect(status().isOk());
+	}
+
+	private String transfer(String toLogin, long amount) {
+		return """
+				{"transactionUuid": "%s", "fromLogin": "user1", "toLogin": "%s", "amount": %d}
+				""".formatted(TRANSACTION_UUID, toLogin, amount);
 	}
 }
