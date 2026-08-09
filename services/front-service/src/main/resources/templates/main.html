@@ -74,7 +74,7 @@
                                     <label for="cash_value">Сумма, руб.</label>
                                 </h6>
                                 <p>
-                                    <input type="number" class="form-control" id="cash_value" name="value" placeholder="100" required>
+                                    <input type="number" min="1" max="999999999999999999" class="form-control" id="cash_value" name="value" placeholder="100" required>
                                 </p>
                             </div>
                             <button type="submit" class="btn btn-secondary" name="action" value="PUT">Положить</button>
@@ -108,7 +108,7 @@
                                     <label for="transfer_value">Сумма, руб.</label>
                                 </h6>
                                 <p>
-                                    <input type="text" class="form-control" name="value" id="transfer_value" placeholder="100" required>
+                                    <input type="number" min="1" max="999999999999999999" class="form-control" name="value" id="transfer_value" placeholder="100" required>
                                 </p>
                             </div>
                             <button type="submit" class="btn btn-secondary">Перевести</button>
