@@ -28,3 +28,5 @@ mybank:
       batch-size: 20
       stale-timeout: 5m
       max-attempts: 5
+      retry-delay: 0s
+      max-retry-delay: 0s
