@@ -99,6 +99,28 @@ class TransferOrchestrationIntegrationTest {
 	}
 
 	@Test
+	void reclaimedOperationReturnsResultButSkipsJournalAndNotification() {
+		when(accountsClient.transfer(any())).thenAnswer(invocation -> {
+			reclaimByAnotherRequest();
+
+			return response(invocation.getArgument(0, TransactionRequest.class));
+		});
+
+		TransferOperationDto result = transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500);
+
+		assertThat(result.uuid()).isEqualTo(IDEMPOTENCY_KEY);
+		assertThat(result.amount()).isEqualTo(500);
+		assertThat(result.status()).isEqualTo(TransferOperationStatus.COMPLETED);
+
+		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from transfer_operations");
+		assertThat(operation.get("status")).isEqualTo("PENDING");
+		assertThat(operation.get("from_account_uuid")).isNull();
+
+		Long events = jdbcTemplate.queryForObject("select count(*) from notifications_outbox", Long.class);
+		assertThat(events).isZero();
+	}
+
+	@Test
 	void rejectedTransferFailsJournalWithoutEvents() {
 		when(accountsClient.transfer(any()))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
@@ -243,6 +265,10 @@ class TransferOrchestrationIntegrationTest {
 
 	private long operationCount() {
 		return jdbcTemplate.queryForObject("select count(*) from transfer_operations", Long.class);
+	}
+
+	private void reclaimByAnotherRequest() {
+		jdbcTemplate.update("update transfer_operations set version = version + 1 where uuid = ?", IDEMPOTENCY_KEY);
 	}
 
 	private void assertFailedWithReason(String reason) {

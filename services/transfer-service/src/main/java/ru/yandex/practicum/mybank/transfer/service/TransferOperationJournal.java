@@ -58,13 +58,13 @@ public class TransferOperationJournal {
 	}
 
 	@Transactional
-	public TransferOperation complete(long operationId, TransactionResponse transaction) {
+	public TransferOperation complete(TransferOperation claimed, TransactionResponse transaction) {
 		TransactionOperation sent = transaction.sent();
 		TransactionOperation received = transaction.received();
 
-		TransferOperation operation = transferOperationRepository.findById(operationId).orElseThrow();
-		operation.complete(sent.fromAccountUuid(), sent.fromCustomerUuid(),
+		claimed.complete(sent.fromAccountUuid(), sent.fromCustomerUuid(),
 				received.toAccountUuid(), received.toCustomerUuid());
+		TransferOperation operation = transferOperationRepository.save(claimed);
 
 		save(EventType.MONEY_SENT, operation, sent.fromCustomerUuid(), transaction, sent);
 		save(EventType.MONEY_RECEIVED, operation, received.toCustomerUuid(), transaction, received);
@@ -73,11 +73,10 @@ public class TransferOperationJournal {
 	}
 
 	@Transactional
-	public TransferOperation fail(long operationId, String failureReason) {
-		TransferOperation operation = transferOperationRepository.findById(operationId).orElseThrow();
-		operation.fail(failureReason);
+	public TransferOperation fail(TransferOperation claimed, String failureReason) {
+		claimed.fail(failureReason);
 
-		return operation;
+		return transferOperationRepository.save(claimed);
 	}
 
 	private void save(EventType eventType, TransferOperation operation, UUID recipientUuid,

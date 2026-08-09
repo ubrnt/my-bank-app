@@ -1,5 +1,8 @@
 package ru.yandex.practicum.mybank.transfer.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.mybank.chassis.client.ServiceCallException;
 import ru.yandex.practicum.mybank.transfer.client.AccountsClient;
@@ -14,6 +17,8 @@ import java.util.UUID;
 
 @Service
 public class TransferService {
+
+	private static final Logger log = LoggerFactory.getLogger(TransferService.class);
 
 	private final AccountsClient accountsClient;
 	private final TransferOperationJournal journal;
@@ -37,15 +42,35 @@ public class TransferService {
 			transaction = accountsClient.transfer(
 					new TransactionRequest(operation.getUuid(), fromLogin, toLogin, amount));
 		} catch (TransactionRejectedException e) {
-			journal.fail(operation.getId(), e.getCode());
+			fail(operation, e.getCode());
 
 			throw e;
 		} catch (ServiceCallException e) {
-			journal.fail(operation.getId(), AccountsServiceUnavailableException.CODE);
+			fail(operation, AccountsServiceUnavailableException.CODE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}
 
-		return TransferOperationDto.of(journal.complete(operation.getId(), transaction));
+		try {
+			return TransferOperationDto.of(journal.complete(operation, transaction));
+		} catch (ObjectOptimisticLockingFailureException e) {
+			logReclaimed(operation);
+
+			return TransferOperationDto.of(operation);
+		}
+	}
+
+	private void fail(TransferOperation operation, String failureReason) {
+		try {
+			journal.fail(operation, failureReason);
+		} catch (ObjectOptimisticLockingFailureException e) {
+			logReclaimed(operation);
+		}
+	}
+
+	private void logReclaimed(TransferOperation operation) {
+		log.warn("Operation {} claimed at {} with version {} was reclaimed by a later request, "
+						+ "leaving the journal to its owner",
+				operation.getUuid(), operation.getUpdatedTs(), operation.getVersion());
 	}
 }
