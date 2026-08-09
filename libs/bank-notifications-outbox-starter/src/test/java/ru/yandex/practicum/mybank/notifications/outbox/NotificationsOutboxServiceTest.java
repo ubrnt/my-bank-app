@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,7 +23,9 @@ class NotificationsOutboxServiceTest {
 
 	private static final UUID CUSTOMER_UUID = UUID.fromString("3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111");
 	private static final String ERROR = "java.net.ConnectException: Connection refused";
-	private static final int MAX_ATTEMPTS = 5;
+	private static final int MAX_ATTEMPTS = 8;
+	private static final Duration RETRY_DELAY = Duration.ofSeconds(5);
+	private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
 
 	private record CustomerPayload(UUID uuid, String login, String name) {
 	}
@@ -35,7 +38,7 @@ class NotificationsOutboxServiceTest {
 	@BeforeEach
 	void setUp() {
 		NotificationsOutboxProperties properties = new NotificationsOutboxProperties(
-				Duration.ofSeconds(5), 20, Duration.ofMinutes(5), MAX_ATTEMPTS);
+				Duration.ofSeconds(5), 20, Duration.ofMinutes(5), MAX_ATTEMPTS, RETRY_DELAY, MAX_RETRY_DELAY);
 
 		notificationsOutboxService = new NotificationsOutboxService(notificationsOutboxEventRepository, JsonMapper.builder().build(), properties);
 	}
@@ -70,6 +73,31 @@ class NotificationsOutboxServiceTest {
 	}
 
 	@Test
+	void postponesEveryRetryFurtherThanThePrevious() {
+		NotificationsOutboxEvent event = eventWithFailedAttempts(2);
+		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
+		Instant before = Instant.now();
+
+		notificationsOutboxService.markNotDelivered(1L, ERROR);
+
+		Duration expected = RETRY_DELAY.multipliedBy(4);
+		assertThat(event.getNextAttemptAt()).isBetween(before.plus(expected), Instant.now().plus(expected));
+	}
+
+	@Test
+	void doesNotPostponeRetriesBeyondTheCap() {
+		NotificationsOutboxEvent event = eventWithFailedAttempts(5);
+		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
+		Instant before = Instant.now();
+
+		notificationsOutboxService.markNotDelivered(1L, ERROR);
+
+		assertThat(RETRY_DELAY.multipliedBy(32)).isGreaterThan(MAX_RETRY_DELAY);
+		assertThat(event.getNextAttemptAt())
+				.isBetween(before.plus(MAX_RETRY_DELAY), Instant.now().plus(MAX_RETRY_DELAY));
+	}
+
+	@Test
 	void failsOnceMaxAttemptsReached() {
 		NotificationsOutboxEvent event = eventWithFailedAttempts(MAX_ATTEMPTS - 1);
 		when(notificationsOutboxEventRepository.findById(anyLong())).thenReturn(Optional.of(event));
@@ -96,7 +124,7 @@ class NotificationsOutboxServiceTest {
 				CUSTOMER_UUID, "{\"uuid\":\"cccc\"}");
 
 		for (int attempt = 0; attempt < attempts; attempt++) {
-			event.markPending(ERROR);
+			event.markPending(ERROR, Instant.now());
 		}
 
 		return event;

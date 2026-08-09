@@ -37,6 +37,9 @@ public class NotificationsOutboxEvent extends BaseEntity {
 	@Column(nullable = false, length = 16)
 	private NotificationsOutboxStatus status;
 
+	@Column(name = "next_attempt_at", nullable = false)
+	private Instant nextAttemptAt;
+
 	@Column(name = "locked_at")
 	private Instant lockedAt;
 
@@ -60,6 +63,7 @@ public class NotificationsOutboxEvent extends BaseEntity {
 		this.recipientUuid = recipientUuid;
 		this.payload = payload;
 		this.status = NotificationsOutboxStatus.PENDING;
+		this.nextAttemptAt = Instant.now();
 	}
 
 	public void markProcessed() {
@@ -68,11 +72,12 @@ public class NotificationsOutboxEvent extends BaseEntity {
 		this.lockedAt = null;
 	}
 
-	public void markPending(String error) {
+	public void markPending(String error, Instant nextAttemptAt) {
 		this.status = NotificationsOutboxStatus.PENDING;
 		this.attempts++;
 		this.lastError = error;
 		this.lockedAt = null;
+		this.nextAttemptAt = nextAttemptAt;
 	}
 
 	public void markFailed(String error) {
@@ -104,6 +109,10 @@ public class NotificationsOutboxEvent extends BaseEntity {
 
 	public NotificationsOutboxStatus getStatus() {
 		return status;
+	}
+
+	public Instant getNextAttemptAt() {
+		return nextAttemptAt;
 	}
 
 	public Instant getLockedAt() {

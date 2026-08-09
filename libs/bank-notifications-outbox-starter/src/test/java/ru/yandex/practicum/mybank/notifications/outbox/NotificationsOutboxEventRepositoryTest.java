@@ -69,6 +69,18 @@ class NotificationsOutboxEventRepositoryTest {
 	}
 
 	@Test
+	void skipsEventsWaitingForTheirNextAttempt() {
+		NotificationsOutboxEvent event = saveEvent();
+		flushAndClear();
+		postponeNextAttempt(event.getId());
+
+		List<NotificationsOutboxEvent> claimed = notificationsOutboxEventRepository.claim(STALE_TIMEOUT_SECONDS, BATCH_SIZE);
+
+		assertThat(claimed).isEmpty();
+		assertThat(countWithStatus(NotificationsOutboxStatus.PENDING)).isEqualTo(1);
+	}
+
+	@Test
 	void releasesLockWhenProcessed() {
 		saveEvent();
 		flushAndClear();
@@ -105,6 +117,18 @@ class NotificationsOutboxEventRepositoryTest {
 						 where id = :id
 						""")
 				.setParameter("staleTimeoutSeconds", STALE_TIMEOUT_SECONDS)
+				.setParameter("id", id)
+				.executeUpdate();
+		flushAndClear();
+	}
+
+	private void postponeNextAttempt(long id) {
+		entityManager.createNativeQuery("""
+						update notifications_outbox
+						   set next_attempt_at = now() + make_interval(secs => :delaySeconds)
+						 where id = :id
+						""")
+				.setParameter("delaySeconds", STALE_TIMEOUT_SECONDS)
 				.setParameter("id", id)
 				.executeUpdate();
 		flushAndClear();

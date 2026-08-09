@@ -13,7 +13,7 @@ public class NotificationsOutboxEventRepository {
 			   set status = 'PROCESSING', locked_at = now()
 			 where id in (
 			       select id from notifications_outbox
-			        where status = 'PENDING'
+			        where (status = 'PENDING' and next_attempt_at <= now())
 			           or (status = 'PROCESSING' and locked_at < now() - make_interval(secs => :staleTimeoutSeconds))
 			        order by id
 			        limit :batchSize

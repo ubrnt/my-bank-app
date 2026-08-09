@@ -3,6 +3,8 @@ package ru.yandex.practicum.mybank.notifications.outbox;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,7 +47,18 @@ public class NotificationsOutboxService {
 		if (event.getAttempts() + 1 >= properties.maxAttempts()) {
 			event.markFailed(error);
 		} else {
-			event.markPending(error);
+			Duration retryDelay = calculateRetryDelay(event.getAttempts());
+
+			event.markPending(error, Instant.now().plus(retryDelay));
 		}
+	}
+
+	private Duration calculateRetryDelay(int attempts) {
+		Duration maxRetryDelay = properties.maxRetryDelay();
+
+		long multiplier = (long) Math.pow(2, attempts);
+		Duration retryDelay = properties.retryDelay().multipliedBy(multiplier);
+
+		return retryDelay.compareTo(maxRetryDelay) > 0 ? maxRetryDelay : retryDelay;
 	}
 }
