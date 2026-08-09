@@ -34,21 +34,23 @@ public class TransferOperationJournal {
 
 
 	@Transactional
-	public Optional<TransferOperation> tryClaim(UUID uuid, String fromCustomerLogin, long amount) {
-		return transferOperationRepository.insertIfAbsent(uuid, fromCustomerLogin, amount);
+	public Optional<TransferOperation> tryClaim(UUID uuid, String fromCustomerLogin, String toCustomerLogin,
+			long amount) {
+		return transferOperationRepository.insertIfAbsent(uuid, fromCustomerLogin, toCustomerLogin, amount);
 	}
 
 	@Transactional
-	public Optional<TransferOperation> tryReclaim(UUID uuid, String fromCustomerLogin, long amount) {
-		Optional<TransferOperation> reclaimed = transferOperationRepository
-				.reclaimIfSettledOrExpired(uuid, fromCustomerLogin, amount, pendingTimeout.toSeconds());
+	public Optional<TransferOperation> tryReclaim(UUID uuid, String fromCustomerLogin, String toCustomerLogin,
+			long amount) {
+		Optional<TransferOperation> reclaimed = transferOperationRepository.reclaimIfSettledOrExpired(uuid,
+				fromCustomerLogin, toCustomerLogin, amount, pendingTimeout.toSeconds());
 
 		if (reclaimed.isPresent()) {
 			return reclaimed;
 		}
 
 		TransferOperation claimed = transferOperationRepository.findByUuid(uuid).orElseThrow();
-		if (!claimed.matches(fromCustomerLogin, amount)) {
+		if (!claimed.matches(fromCustomerLogin, toCustomerLogin, amount)) {
 			throw new IdempotencyKeyConflictException(uuid);
 		}
 

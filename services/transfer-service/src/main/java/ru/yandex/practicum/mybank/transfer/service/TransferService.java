@@ -26,8 +26,8 @@ public class TransferService {
 	}
 
 	public TransferOperationDto transfer(UUID idempotencyKey, String fromLogin, String toLogin, long amount) {
-		TransferOperation operation = journal.tryClaim(idempotencyKey, fromLogin, amount)
-				.or(() -> journal.tryReclaim(idempotencyKey, fromLogin, amount))
+		TransferOperation operation = journal.tryClaim(idempotencyKey, fromLogin, toLogin, amount)
+				.or(() -> journal.tryReclaim(idempotencyKey, fromLogin, toLogin, amount))
 				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
 
 		if (operation.getStatus() == TransferOperationStatus.COMPLETED) {

@@ -17,6 +17,9 @@ public class TransferOperation extends BaseEntity {
 	@Column(name = "from_customer_login", nullable = false, updatable = false)
 	private String fromCustomerLogin;
 
+	@Column(name = "to_customer_login", nullable = false, updatable = false)
+	private String toCustomerLogin;
+
 	@Column(name = "from_customer_uuid")
 	private UUID fromCustomerUuid;
 
@@ -49,8 +52,10 @@ public class TransferOperation extends BaseEntity {
 		this.status = TransferOperationStatus.PENDING;
 	}
 
-	public boolean matches(String fromCustomerLogin, long amount) {
-		return this.fromCustomerLogin.equals(fromCustomerLogin) && this.amount == amount;
+	public boolean matches(String fromCustomerLogin, String toCustomerLogin, long amount) {
+		return this.fromCustomerLogin.equals(fromCustomerLogin)
+			&& this.toCustomerLogin.equals(toCustomerLogin)
+			&& this.amount == amount;
 	}
 
 	public void complete(UUID fromAccountUuid, UUID fromCustomerUuid, UUID toAccountUuid, UUID toCustomerUuid) {
@@ -65,6 +70,10 @@ public class TransferOperation extends BaseEntity {
 	public void fail(String failureReason) {
 		this.status = TransferOperationStatus.FAILED;
 		this.failureReason = failureReason;
+	}
+
+	public String getToCustomerLogin() {
+		return toCustomerLogin;
 	}
 
 	public String getFromCustomerLogin() {

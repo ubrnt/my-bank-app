@@ -171,6 +171,23 @@ class TransferOrchestrationIntegrationTest {
 	}
 
 	@Test
+	void repeatWithOtherRecipientIsRejected() {
+		when(accountsClient.transfer(any())).thenAnswer(invocation ->
+				response(invocation.getArgument(0, TransactionRequest.class)));
+
+		transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500);
+
+		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user3", 500))
+				.isInstanceOf(IdempotencyKeyConflictException.class);
+
+		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from transfer_operations");
+		assertThat(operation.get("to_customer_login")).isEqualTo("user2");
+
+		verify(accountsClient, times(1)).transfer(any());
+		assertThat(operationCount()).isOne();
+	}
+
+	@Test
 	void repeatWithOtherAmountIsRejected() {
 		when(accountsClient.transfer(any()))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
@@ -219,8 +236,8 @@ class TransferOrchestrationIntegrationTest {
 
 	private void insertPendingOperation(UUID uuid, int ageSeconds) {
 		jdbcTemplate.update("""
-				insert into transfer_operations (uuid, from_customer_login, amount, status, created_ts, updated_ts, version)
-				values (?, 'user1', 500, 'PENDING', now(), now() - make_interval(secs => ?), 0)
+				insert into transfer_operations (uuid, from_customer_login, to_customer_login, amount, status, created_ts, updated_ts, version)
+				values (?, 'user1', 'user2', 500, 'PENDING', now(), now() - make_interval(secs => ?), 0)
 				""", uuid, ageSeconds);
 	}
 
