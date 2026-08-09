@@ -24,7 +24,7 @@ class MessageRendererTest {
 				""");
 
 		assertThat(messageRenderer.render(EventType.MONEY_DEPOSITED, payload))
-				.isEqualTo("Счёт *0001: пополнение на 5000. Доступно 105000");
+				.isEqualTo("Счёт *0001: пополнение на 5\u00A0000. Доступно 105\u00A0000");
 	}
 
 	@Test
@@ -35,19 +35,19 @@ class MessageRendererTest {
 				""");
 
 		assertThat(messageRenderer.render(EventType.MONEY_WITHDRAWN, payload))
-				.isEqualTo("Счёт *0001: снятие 500. Доступно 99500");
+				.isEqualTo("Счёт *0001: снятие 500. Доступно 99\u00A0500");
 	}
 
 	@Test
 	void rendersTransferForSender() {
 		assertThat(messageRenderer.render(EventType.MONEY_SENT, transfer(98500)))
-				.isEqualTo("Счёт *0001: перевод 3000 на счёт *0002. Доступно 98500");
+				.isEqualTo("Счёт *0001: перевод 3\u00A0000 на счёт *0002. Доступно 98\u00A0500");
 	}
 
 	@Test
 	void rendersTransferForReceiver() {
 		assertThat(messageRenderer.render(EventType.MONEY_RECEIVED, transfer(53000)))
-				.isEqualTo("Счёт *0002: поступление 3000 со счёта *0001. Доступно 53000");
+				.isEqualTo("Счёт *0002: поступление 3\u00A0000 со счёта *0001. Доступно 53\u00A0000");
 	}
 
 	@Test

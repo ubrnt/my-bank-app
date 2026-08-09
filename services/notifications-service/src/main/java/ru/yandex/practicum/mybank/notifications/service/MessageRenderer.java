@@ -22,33 +22,41 @@ public class MessageRenderer {
 		Object[] args = switch (type) {
 			case MONEY_DEPOSITED -> new Object[]{
 					mask(text(payload, "operation", "toNumber")),
-					text(payload, "operation", "amount"),
-					text(payload, "operation", "balanceAfter")};
+					number(payload, "operation", "amount"),
+					number(payload, "operation", "balanceAfter")};
 			case MONEY_WITHDRAWN -> new Object[]{
 					mask(text(payload, "operation", "fromNumber")),
-					text(payload, "operation", "amount"),
-					text(payload, "operation", "balanceAfter")};
+					number(payload, "operation", "amount"),
+					number(payload, "operation", "balanceAfter")};
 			case MONEY_SENT -> new Object[]{
 					mask(text(payload, "operation", "fromNumber")),
-					text(payload, "operation", "amount"),
+					number(payload, "operation", "amount"),
 					mask(text(payload, "operation", "toNumber")),
-					text(payload, "operation", "balanceAfter")};
+					number(payload, "operation", "balanceAfter")};
 			case MONEY_RECEIVED -> new Object[]{
 					mask(text(payload, "operation", "toNumber")),
-					text(payload, "operation", "amount"),
+					number(payload, "operation", "amount"),
 					mask(text(payload, "operation", "fromNumber")),
-					text(payload, "operation", "balanceAfter")};
+					number(payload, "operation", "balanceAfter")};
 			case CUSTOMER_UPDATED -> new Object[]{};
 		};
 
-		return messageSource.getMessage("notification." + type.name(), args, Locale.ROOT);
+		return messageSource.getMessage("notification." + type.name(), args, Locale.of("ru"));
 	}
 
 	private String mask(String accountNumber) {
 		return "*" + accountNumber.substring(Math.max(0, accountNumber.length() - VISIBLE_NUMBER_DIGITS));
 	}
 
+	private long number(JsonNode payload, String... path) {
+		return node(payload, path).asLong();
+	}
+
 	private String text(JsonNode payload, String... path) {
+		return node(payload, path).asString();
+	}
+
+	private JsonNode node(JsonNode payload, String... path) {
 		JsonNode node = payload;
 
 		for (String field : path) {
@@ -59,6 +67,6 @@ public class MessageRenderer {
 			}
 		}
 
-		return node.asString();
+		return node;
 	}
 }

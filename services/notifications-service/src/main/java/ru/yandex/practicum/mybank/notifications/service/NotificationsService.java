@@ -3,7 +3,6 @@ package ru.yandex.practicum.mybank.notifications.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.notifications.client.AccountsClient;
 import ru.yandex.practicum.mybank.notifications.client.dto.CustomerResponse;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
@@ -30,7 +29,6 @@ public class NotificationsService {
 		this.accountsClient = accountsClient;
 	}
 
-	@Transactional
 	public void receive(UUID eventUuid, EventType type, UUID recipientUuid, JsonNode payload) {
 		CustomerResponse recipient = accountsClient.getCustomer(recipientUuid);
 		String message = messageRenderer.render(type, payload);
