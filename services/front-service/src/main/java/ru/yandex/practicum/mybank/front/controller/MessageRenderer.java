@@ -7,6 +7,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.mybank.front.client.GatewayException;
 import ru.yandex.practicum.mybank.front.client.dto.ErrorResponse;
+import ru.yandex.practicum.mybank.front.client.dto.FieldError;
 
 import java.util.List;
 import java.util.Locale;
@@ -31,14 +32,24 @@ public class MessageRenderer {
 			return List.of(unknownErrorMessage());
 		}
 
-		if (response.validationErrors() != null) {
-			return response.validationErrors().fields().stream()
+		List<FieldError> fields = validationFields(response);
+
+		if (!fields.isEmpty()) {
+			return fields.stream()
 					.map(field -> errorMessage("error.field." + field.field()))
 					.distinct()
 					.toList();
 		}
 
 		return List.of(errorMessage("error." + response.code()));
+	}
+
+	private List<FieldError> validationFields(ErrorResponse response) {
+		if (response.validationErrors() == null || response.validationErrors().fields() == null) {
+			return List.of();
+		}
+
+		return response.validationErrors().fields();
 	}
 
 	public @Nullable String infoMessage(String key, Object... args) {

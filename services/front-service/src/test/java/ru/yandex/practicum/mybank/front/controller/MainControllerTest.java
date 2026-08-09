@@ -215,6 +215,30 @@ class MainControllerTest {
 	}
 
 	@Test
+	void fallsBackToTheCodeWhenValidationErrorsCarryNoFields() throws Exception {
+		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", new ValidationErrors(null)));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Недостаточно средств на счёте")));
+	}
+
+	@Test
+	void fallsBackToTheCodeWhenValidationErrorsAreEmpty() throws Exception {
+		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", new ValidationErrors(List.of())));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Недостаточно средств на счёте")));
+	}
+
+	@Test
 	void showsGenericTextForUnknownCode() throws Exception {
 		rejectWithdrawal(new ErrorResponse("teapot_on_fire", "Whatever", null));
 
