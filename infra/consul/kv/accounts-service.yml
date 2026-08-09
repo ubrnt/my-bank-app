@@ -22,14 +22,6 @@ spring:
   liquibase:
     default-schema: accounts
 
-mybank:
-  notifications:
-    outbox:
-      poll-interval: 5s
-      batch-size: 20
-      stale-timeout: 5m
-      max-attempts: 5
-
 resilience4j:
   circuitbreaker:
     instances:

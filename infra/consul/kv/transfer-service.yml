@@ -31,12 +31,6 @@ spring:
 mybank:
   transfer:
     pending-timeout: 30s
-  notifications:
-    outbox:
-      poll-interval: 5s
-      batch-size: 20
-      stale-timeout: 5m
-      max-attempts: 5
 
 resilience4j:
   circuitbreaker:
