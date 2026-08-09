@@ -12,7 +12,6 @@ public record TransactionResponse(
 		List<Operation> operations
 ) {
 
-	//todo ubrnt, think whether we need to have dto's at all
 	public static TransactionResponse of(TransactionDto transaction) {
 		return new TransactionResponse(
 				transaction.uuid(),

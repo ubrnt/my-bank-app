@@ -76,7 +76,6 @@ public class CustomerService {
 		return new CustomerDto(customer.getUuid(), customer.getLogin(), customer.getName());
 	}
 
-	//todo ubrnt mappers?
 	private CustomerAccountDto toDto(CustomerAccount customerAccount) {
 		Customer customer = customerAccount.customer();
 		Account account = customerAccount.account();

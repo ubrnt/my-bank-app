@@ -159,7 +159,6 @@ public class TransactionsService {
 		}
 	}
 
-	//todo mappers ubrnt?
 	private TransactionDto toDto(Transaction transaction, BalanceOperation operation) {
 		Account account = operation.getAccount();
 		long amount = operation.getAmount();
