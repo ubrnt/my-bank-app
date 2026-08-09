@@ -48,6 +48,11 @@ public class AccountsClient {
 				| HttpClientErrorException.Conflict e) {
 			ErrorResponse error = e.getResponseBodyAs(ErrorResponse.class);
 
+			if (error == null) {
+				throw new TransactionRejectedException(TransactionRejectedException.UNREADABLE_REJECTION,
+						"accounts-service rejected the operation with status " + e.getStatusCode());
+			}
+
 			throw new TransactionRejectedException(error.code(), error.message());
 		}
 	}

@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(properties = "mybank.accounts.retry.delay=1ms")
 @Import({PostgresContainerConfig.class, FakeTokenConfig.class})
-class AccountsClientRetryTest {
+class AccountsClientTest {
 
 	@RegisterExtension
 	static WireMockExtension accounts = WireMockExtension.newInstance()
@@ -80,6 +80,18 @@ class AccountsClientRetryTest {
 		assertThatThrownBy(() -> accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500)))
 				.isInstanceOf(TransactionRejectedException.class)
 				.hasFieldOrPropertyWithValue("code", "customer_account_not_found");
+
+		accounts.verify(1, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
+	}
+
+	@Test
+	void rejectionWithoutBodyIsReportedWithItsOwnCode() {
+		accounts.stubFor(post(urlEqualTo("/api/transactions/deposit"))
+				.willReturn(aResponse().withStatus(422)));
+
+		assertThatThrownBy(() -> accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500)))
+				.isInstanceOf(TransactionRejectedException.class)
+				.hasFieldOrPropertyWithValue("code", TransactionRejectedException.UNREADABLE_REJECTION);
 
 		accounts.verify(1, postRequestedFor(urlEqualTo("/api/transactions/deposit")));
 	}
