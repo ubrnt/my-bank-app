@@ -17,8 +17,6 @@ import java.util.UUID;
 @Service
 public class CashService {
 
-	private static final String ACCOUNTS_UNAVAILABLE = "accounts_unavailable";
-
 	private final AccountsClient accountsClient;
 	private final CashOperationJournal journal;
 
@@ -57,7 +55,7 @@ public class CashService {
 
 			throw e;
 		} catch (ServiceCallException e) {
-			journal.fail(operation.getId(), ACCOUNTS_UNAVAILABLE);
+			journal.fail(operation.getId(), AccountsServiceUnavailableException.CODE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}

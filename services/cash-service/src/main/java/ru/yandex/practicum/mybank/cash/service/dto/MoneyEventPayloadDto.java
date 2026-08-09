@@ -43,7 +43,7 @@ public record MoneyEventPayloadDto(
 
 		private static long require(Long value, String field) {
 			if (value == null) {
-				throw new IllegalStateException("Accounts operation lacks '%s'".formatted(field));
+				throw new IllegalStateException("accounts-service operation lacks '%s'".formatted(field));
 			}
 
 			return value;

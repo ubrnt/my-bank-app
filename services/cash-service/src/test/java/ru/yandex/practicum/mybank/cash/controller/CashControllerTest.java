@@ -154,7 +154,21 @@ class CashControllerTest {
 								{"amount": 500}
 								"""))
 				.andExpect(status().isServiceUnavailable())
-				.andExpect(jsonPath("$.code").value("accounts_unavailable"));
+				.andExpect(jsonPath("$.code").value("accounts_service_unavailable"));
+	}
+
+	@Test
+	void reportsUnexpectedFailureInTheCommonFormat() throws Exception {
+		when(cashService.deposit(IDEMPOTENCY_KEY, "user1", 500)).thenThrow(new IllegalStateException("boom"));
+
+		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "cash:write"))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
+						.content("""
+								{"amount": 500}
+								"""))
+				.andExpect(status().isInternalServerError())
+				.andExpect(jsonPath("$.code").value("internal_error"));
 	}
 
 	private static org.springframework.test.web.servlet.request.RequestPostProcessor user(String login, String scope) {

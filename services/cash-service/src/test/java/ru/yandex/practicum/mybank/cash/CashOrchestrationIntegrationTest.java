@@ -111,7 +111,7 @@ class CashOrchestrationIntegrationTest {
 
 		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from cash_operations");
 		assertThat(operation.get("status")).isEqualTo("FAILED");
-		assertThat(operation.get("failure_reason")).isEqualTo("accounts_unavailable");
+		assertThat(operation.get("failure_reason")).isEqualTo("accounts_service_unavailable");
 
 		Long events = jdbcTemplate.queryForObject("select count(*) from notifications_outbox", Long.class);
 		assertThat(events).isZero();
