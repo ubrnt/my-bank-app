@@ -244,7 +244,7 @@ class MainControllerTest {
 	void keepsOperationErrorWhenCustomerCannotBeReadEither() throws Exception {
 		rejectWithdrawal(new ErrorResponse("service_unavailable", "Down", null));
 		when(gatewayClient.getCustomer())
-				.thenThrow(new GatewayException(new ErrorResponse("accounts_unavailable", "Down", null),
+				.thenThrow(new GatewayException(new ErrorResponse("accounts_service_unavailable", "Down", null),
 						new RuntimeException()));
 
 		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
@@ -258,7 +258,7 @@ class MainControllerTest {
 	@Test
 	void showsErrorWhenCustomerCannotBeRead() throws Exception {
 		when(gatewayClient.getCustomer())
-				.thenThrow(new GatewayException(new ErrorResponse("accounts_unavailable", "Down", null),
+				.thenThrow(new GatewayException(new ErrorResponse("accounts_service_unavailable", "Down", null),
 						new RuntimeException()));
 
 		mockMvc.perform(get("/account").with(oidcLogin()))
