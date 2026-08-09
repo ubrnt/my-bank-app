@@ -74,6 +74,18 @@ class AccountsClientTest {
 	}
 
 	@Test
+	void rejectionWithoutBodyIsReportedWithItsOwnCode() {
+		accounts.stubFor(post(urlEqualTo(TRANSFER_URL)).willReturn(aResponse().withStatus(422)));
+
+		assertThatThrownBy(() -> accountsClient.transfer(request()))
+				.isInstanceOf(TransactionRejectedException.class)
+				.extracting(e -> ((TransactionRejectedException) e).getCode())
+				.isEqualTo(TransactionRejectedException.UNREADABLE_REJECTION);
+
+		accounts.verify(1, postRequestedFor(urlEqualTo(TRANSFER_URL)));
+	}
+
+	@Test
 	void serverErrorIsRetriedUntilAttemptsRunOut() {
 		accounts.stubFor(post(urlEqualTo(TRANSFER_URL)).willReturn(aResponse().withStatus(500)));
 
