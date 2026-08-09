@@ -362,6 +362,12 @@ A row that was claimed but never settled, because the service died mid call, blo
 for `mybank.<service>.pending-timeout`, 30 seconds by default. After that a repeat with the same
 key takes the row over and finishes it.
 
+A key stands for one request, not for a slot: a repeat may retry an operation but may not change
+it. A row is taken over only when the repeat carries the same details and the row either failed or
+is still pending past that timeout. Anything else under a key that is already taken answers
+`409 idempotency_key_conflict`, and the UI hands out a fresh key so the changed operation can be
+sent as its own request.
+
 ## Storage
 
 One PostgreSQL database with four schemas, one per service that keeps data. Each schema has its
