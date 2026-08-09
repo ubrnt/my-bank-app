@@ -4,6 +4,9 @@ spring:
     password: ${CASH_DB_PASSWORD:cash}
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          audiences: cash-service
       client:
         registration:
           accounts-service:

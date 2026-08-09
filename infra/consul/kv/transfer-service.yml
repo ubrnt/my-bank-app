@@ -4,6 +4,9 @@ spring:
     password: ${TRANSFER_DB_PASSWORD:transfer}
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          audiences: transfer-service
       client:
         registration:
           accounts-service:

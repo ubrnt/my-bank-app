@@ -4,6 +4,9 @@ spring:
     password: ${ACCOUNTS_DB_PASSWORD:accounts}
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          audiences: accounts-service
       client:
         registration:
           notifications-service:

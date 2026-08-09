@@ -71,7 +71,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "customer:write",
@@ -80,7 +93,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "customer:others:read",
@@ -89,7 +115,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "transactions:write",
@@ -98,7 +137,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "cash:write",
@@ -107,7 +159,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "cash-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "cash-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "transfer:write",
@@ -116,7 +181,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "transfer-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "transfer-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "notifications:write",
@@ -125,7 +203,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "notifications-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "notifications-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     },
     {
       "name": "customer:any:read",
@@ -134,7 +225,20 @@
       "attributes": {
         "include.in.token.scope": "true",
         "display.on.consent.screen": "false"
-      }
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-service-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "clients": [
@@ -162,7 +266,7 @@
         "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "basic",
@@ -196,7 +300,7 @@
         "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "basic",
@@ -230,7 +334,7 @@
         "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "basic",
@@ -265,7 +369,7 @@
         "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "basic",
@@ -304,7 +408,7 @@
         "post.logout.redirect.uris": "+"
       },
       "authenticationFlowBindingOverrides": {},
-      "fullScopeAllowed": true,
+      "fullScopeAllowed": false,
       "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "basic",

@@ -4,6 +4,9 @@ spring:
     password: ${NOTIFICATIONS_DB_PASSWORD:notifications}
   security:
     oauth2:
+      resourceserver:
+        jwt:
+          audiences: notifications-service
       client:
         registration:
           accounts-service:
