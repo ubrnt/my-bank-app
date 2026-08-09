@@ -33,3 +33,7 @@ resilience4j:
     instances:
       gateway-service:
         base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 30s

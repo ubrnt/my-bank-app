@@ -15,7 +15,6 @@ resilience4j:
     configs:
       default:
         timeout-duration: 20s
-        cancel-running-future: false
     instances:
       accounts-service:
         base-config: default
