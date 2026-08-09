@@ -36,9 +36,18 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
 		try {
 			chain.doFilter(request, response);
-		} finally {
+
 			log.info("handled {} {} {} in {} ms", request.getMethod(), request.getRequestURI(), response.getStatus(),
-					Duration.ofNanos(System.nanoTime() - startedAt).toMillis());
+					elapsedMillis(startedAt));
+		} catch (Exception e) {
+			log.warn("failed {} {} in {} ms: {}", request.getMethod(), request.getRequestURI(),
+					elapsedMillis(startedAt), e.toString());
+
+			throw e;
 		}
+	}
+
+	private long elapsedMillis(long startedAt) {
+		return Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
 	}
 }
