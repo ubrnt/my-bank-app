@@ -128,7 +128,7 @@ class TransferOrchestrationIntegrationTest {
 		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.isInstanceOf(AccountsServiceUnavailableException.class);
 
-		assertFailedWithReason("accounts_unavailable");
+		assertFailedWithReason("accounts_service_unavailable");
 	}
 
 	@Test

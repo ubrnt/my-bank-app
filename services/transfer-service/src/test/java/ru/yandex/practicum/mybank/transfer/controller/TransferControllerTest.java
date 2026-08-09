@@ -145,7 +145,7 @@ class TransferControllerTest {
 	}
 
 	@Test
-	void hidesTransactionConflictBehindInternalError() throws Exception {
+	void reportsTransactionConflictWithItsCode() throws Exception {
 		when(transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.thenThrow(new TransactionRejectedException("transaction_conflict", "Already applied"));
 
@@ -153,8 +153,8 @@ class TransferControllerTest {
 						.contentType(MediaType.APPLICATION_JSON)
 						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
-				.andExpect(status().isInternalServerError())
-				.andExpect(jsonPath("$.code").value("internal_error"));
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("transaction_conflict"));
 	}
 
 	@Test
@@ -167,7 +167,7 @@ class TransferControllerTest {
 						.header("Idempotency-Key", IDEMPOTENCY_KEY)
 						.content(BODY))
 				.andExpect(status().isServiceUnavailable())
-				.andExpect(jsonPath("$.code").value("accounts_unavailable"));
+				.andExpect(jsonPath("$.code").value("accounts_service_unavailable"));
 	}
 
 	private static RequestPostProcessor user(String login, String scope) {

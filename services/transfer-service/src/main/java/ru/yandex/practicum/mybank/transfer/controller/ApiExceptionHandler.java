@@ -17,20 +17,17 @@ import ru.yandex.practicum.mybank.transfer.service.IdempotencyKeyConflictExcepti
 public class ApiExceptionHandler extends BaseExceptionHandler {
 
 	private static final String TRANSACTION_CONFLICT = "transaction_conflict";
-	private static final String INTERNAL_ERROR = "internal_error";
 
 	private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
 	@ExceptionHandler(TransactionRejectedException.class)
 	public ResponseEntity<ErrorResponse> handleTransactionRejected(TransactionRejectedException exception) {
 		if (TRANSACTION_CONFLICT.equals(exception.getCode())) {
-			log.error("Accounts rejected a transaction uuid that was already applied with other details", exception);
-
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new ErrorResponse(INTERNAL_ERROR, "Transfer could not be completed"));
+			log.error("accounts-service rejected a transaction uuid that was already applied with other details: {}",
+					exception.getMessage());
+		} else {
+			log.warn("accounts-service rejected the transfer: {}", exception.getMessage());
 		}
-
-		log.warn("Accounts rejected the transfer: {}", exception.getMessage());
 
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
 				.body(new ErrorResponse(exception.getCode(), "Transfer rejected by accounts-service"));
@@ -51,6 +48,6 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 	@ExceptionHandler(AccountsServiceUnavailableException.class)
 	public ResponseEntity<ErrorResponse> handleAccountsServiceUnavailable(AccountsServiceUnavailableException exception) {
 		return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-				.body(new ErrorResponse("accounts_unavailable", exception.getMessage()));
+				.body(new ErrorResponse(AccountsServiceUnavailableException.CODE, exception.getMessage()));
 	}
 }
