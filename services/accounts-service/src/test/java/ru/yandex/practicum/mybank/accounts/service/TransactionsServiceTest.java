@@ -75,6 +75,31 @@ class TransactionsServiceTest {
 	}
 
 	@Test
+	void rejectsDepositBeyondBalanceLimit() {
+		claimAcquired(TransactionType.DEPOSIT);
+		ReflectionTestUtils.setField(senderAccount, "balance", Long.MAX_VALUE - 10);
+
+		assertThatThrownBy(() -> transactionsService.deposit(TRANSACTION_UUID, "user1", 11))
+				.isInstanceOf(BalanceLimitExceededException.class);
+
+		assertThat(senderAccount.getBalance()).isEqualTo(Long.MAX_VALUE - 10);
+		verify(balanceOperationRepository, never()).save(any());
+	}
+
+	@Test
+	void rejectsTransferBeyondRecipientBalanceLimit() {
+		claimAcquired(TransactionType.TRANSFER);
+		ReflectionTestUtils.setField(recipientAccount, "balance", Long.MAX_VALUE - 10);
+
+		assertThatThrownBy(() -> transactionsService.transfer(TRANSACTION_UUID, "user1", "user2", 11))
+				.isInstanceOf(BalanceLimitExceededException.class);
+
+		assertThat(senderAccount.getBalance()).isEqualTo(INITIAL_BALANCE);
+		assertThat(recipientAccount.getBalance()).isEqualTo(Long.MAX_VALUE - 10);
+		verify(balanceOperationRepository, never()).save(any());
+	}
+
+	@Test
 	void locksAccountsInLoginOrder() {
 		claimAcquired(TransactionType.TRANSFER);
 

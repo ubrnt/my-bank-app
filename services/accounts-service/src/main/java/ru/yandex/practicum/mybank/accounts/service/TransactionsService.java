@@ -45,6 +45,7 @@ public class TransactionsService {
 		}
 
 		Account account = loadWithLock(login);
+		requireBalanceWithinLimit(login, account, amount);
 		account.deposit(amount);
 
 		BalanceOperation operation = balanceOperationRepository
@@ -102,6 +103,7 @@ public class TransactionsService {
 			from = loadWithLock(fromLogin);
 		}
 		requireSufficientFunds(fromLogin, from, amount);
+		requireBalanceWithinLimit(toLogin, to, amount);
 		from.withdraw(amount);
 		to.deposit(amount);
 
@@ -130,6 +132,12 @@ public class TransactionsService {
 	private void requireSufficientFunds(String login, Account account, long amount) {
 		if (account.getBalance() < amount) {
 			throw new InsufficientFundsException(login, amount, account.getBalance());
+		}
+	}
+
+	private void requireBalanceWithinLimit(String login, Account account, long amount) {
+		if (account.getBalance() > Long.MAX_VALUE - amount) {
+			throw new BalanceLimitExceededException(login, amount, account.getBalance());
 		}
 	}
 

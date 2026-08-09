@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.yandex.practicum.mybank.accounts.service.BalanceLimitExceededException;
 import ru.yandex.practicum.mybank.accounts.service.CustomerAccountNotFoundException;
 import ru.yandex.practicum.mybank.accounts.service.InsufficientFundsException;
 import ru.yandex.practicum.mybank.accounts.service.SameAccountException;
@@ -30,6 +31,12 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException exception) {
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
 				.body(new ErrorResponse("insufficient_funds", exception.getMessage()));
+	}
+
+	@ExceptionHandler(BalanceLimitExceededException.class)
+	public ResponseEntity<ErrorResponse> handleBalanceLimitExceeded(BalanceLimitExceededException exception) {
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+				.body(new ErrorResponse("balance_limit_exceeded", exception.getMessage()));
 	}
 
 	@ExceptionHandler(SameAccountException.class)
