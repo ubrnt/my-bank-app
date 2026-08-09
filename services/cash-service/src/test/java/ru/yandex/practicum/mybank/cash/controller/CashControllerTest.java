@@ -51,6 +51,19 @@ class CashControllerTest {
 	}
 
 	@Test
+	void rejectsTokenWithoutTheUsernameClaim() throws Exception {
+		mockMvc.perform(post("/api/cash/deposit")
+						.with(jwt().jwt(jwt -> jwt.claim("scope", "cash:write")))
+						.contentType(MediaType.APPLICATION_JSON)
+						.header("Idempotency-Key", IDEMPOTENCY_KEY)
+						.content("""
+								{"amount": 500}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.code").value("invalid_token"));
+	}
+
+	@Test
 	void rejectsTokenWithoutWriteScope() throws Exception {
 		mockMvc.perform(post("/api/cash/deposit").with(user("user1", "customer:read"))
 						.contentType(MediaType.APPLICATION_JSON)
