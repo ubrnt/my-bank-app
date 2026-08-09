@@ -18,7 +18,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
+import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.service.NotificationsService;
 import tools.jackson.databind.JsonNode;
@@ -68,10 +68,10 @@ class AccountsContractIntegrationTest {
 	}
 
 	@Test
-	void failsToResolveRecipientUnknownToAccounts() {
+	void reportsRecipientUnknownToAccountsAsUnknown() {
 		assertThatThrownBy(() ->
 				notificationsService.receive(EVENT_UUID, EventType.CUSTOMER_UPDATED, UNKNOWN_RECIPIENT_UUID, payload))
-				.isInstanceOf(CustomerResolutionException.class);
+				.isInstanceOf(UnknownRecipientException.class);
 
 		Long count = jdbcTemplate.queryForObject("select count(*) from notifications", Long.class);
 		assertThat(count).isZero();

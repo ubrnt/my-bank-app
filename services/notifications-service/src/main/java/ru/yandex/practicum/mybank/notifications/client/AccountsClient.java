@@ -1,6 +1,7 @@
 package ru.yandex.practicum.mybank.notifications.client;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import ru.yandex.practicum.mybank.notifications.client.dto.CustomerResponse;
@@ -22,6 +23,8 @@ public class AccountsClient {
 					.uri("/api/customers/{uuid}", customerUuid)
 					.retrieve()
 					.body(CustomerResponse.class);
+		} catch (HttpClientErrorException.NotFound e) {
+			throw new UnknownRecipientException(customerUuid, e);
 		} catch (RestClientException e) {
 			throw new CustomerResolutionException(customerUuid, e);
 		}

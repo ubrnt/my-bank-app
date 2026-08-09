@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.yandex.practicum.mybank.chassis.web.BaseExceptionHandler;
 import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
+import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.service.InvalidEventException;
 
 @RestControllerAdvice
@@ -16,6 +17,12 @@ public class ApiExceptionHandler extends BaseExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleInvalidEvent(InvalidEventException exception) {
 		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
 				.body(new ErrorResponse("invalid_event", exception.getMessage()));
+	}
+
+	@ExceptionHandler(UnknownRecipientException.class)
+	public ResponseEntity<ErrorResponse> handleUnknownRecipient(UnknownRecipientException exception) {
+		return ResponseEntity.status(HttpStatus.UNPROCESSABLE_CONTENT)
+				.body(new ErrorResponse(UnknownRecipientException.CODE, exception.getMessage()));
 	}
 
 	@ExceptionHandler(CustomerResolutionException.class)

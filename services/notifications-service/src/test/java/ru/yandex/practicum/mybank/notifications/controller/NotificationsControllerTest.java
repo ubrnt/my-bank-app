@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
+import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.service.InvalidEventException;
 import ru.yandex.practicum.mybank.notifications.service.NotificationsService;
@@ -120,6 +121,19 @@ class NotificationsControllerTest {
 						.content(BODY))
 				.andExpect(status().isServiceUnavailable())
 				.andExpect(jsonPath("$.code").value("recipient_resolution_failed"));
+	}
+
+	@Test
+	void reportsUnknownRecipient() throws Exception {
+		doThrow(new UnknownRecipientException(UUID.fromString(RECIPIENT_UUID), new RuntimeException("404")))
+				.when(notificationsService).receive(any(), any(), any(), any());
+
+		mockMvc.perform(post("/api/notifications")
+						.with(serviceToken())
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(BODY))
+				.andExpect(status().isUnprocessableContent())
+				.andExpect(jsonPath("$.code").value("unknown_recipient"));
 	}
 
 	private static org.springframework.test.web.servlet.request.RequestPostProcessor serviceToken() {
