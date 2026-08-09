@@ -12,6 +12,7 @@ import ru.yandex.practicum.mybank.front.client.GatewayClient;
 import ru.yandex.practicum.mybank.front.client.GatewayException;
 import ru.yandex.practicum.mybank.front.client.dto.CashRequest;
 import ru.yandex.practicum.mybank.front.client.dto.CustomerResponse;
+import ru.yandex.practicum.mybank.front.client.dto.ErrorResponse;
 import ru.yandex.practicum.mybank.front.client.dto.TransferRequest;
 import ru.yandex.practicum.mybank.front.client.dto.UpdateProfileRequest;
 import ru.yandex.practicum.mybank.front.controller.dto.AccountDto;
@@ -47,6 +48,8 @@ import java.util.UUID;
  */
 @Controller
 public class MainController {
+
+	private static final String IDEMPOTENCY_KEY_CONFLICT = "idempotency_key_conflict";
 
 	private final GatewayClient gatewayClient;
 
@@ -111,7 +114,7 @@ public class MainController {
 
 	@ExceptionHandler(GatewayException.class)
 	public String handleGatewayFailure(GatewayException exception, HttpServletRequest request, Model model) {
-		UUID idempotencyKey = submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
+		UUID idempotencyKey = keyAfterFailure(exception, request);
 
 		fillModel(model, messages.errorMessages(exception), null, idempotencyKey);
 
@@ -165,6 +168,16 @@ public class MainController {
 				.map(AccountDto::name)
 				.findFirst()
 				.orElse(login);
+	}
+
+	private UUID keyAfterFailure(GatewayException exception, HttpServletRequest request) {
+		ErrorResponse response = exception.getResponse();
+
+		if (response != null && IDEMPOTENCY_KEY_CONFLICT.equals(response.code())) {
+			return UUID.randomUUID();
+		}
+
+		return submittedIdempotencyKey(request).orElseGet(UUID::randomUUID);
 	}
 
 	private Optional<UUID> submittedIdempotencyKey(HttpServletRequest request) {

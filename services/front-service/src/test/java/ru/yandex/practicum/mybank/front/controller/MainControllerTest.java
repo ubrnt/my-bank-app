@@ -165,6 +165,19 @@ class MainControllerTest {
 	}
 
 	@Test
+	void rotatesTheKeyWhenTheRequestConflictsWithAnEarlierOne() throws Exception {
+		rejectWithdrawal(new ErrorResponse("idempotency_key_conflict", "Other details", null));
+
+		mockMvc.perform(post("/cash").with(oidcLogin()).with(csrf())
+						.param("idempotencyKey", IDEMPOTENCY_KEY.toString())
+						.param("value", "100")
+						.param("action", "GET"))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("errors", List.of("Данные операции изменились. Отправьте ещё раз")))
+				.andExpect(model().attribute("idempotencyKey", not(IDEMPOTENCY_KEY)));
+	}
+
+	@Test
 	void showsRejectionByCode() throws Exception {
 		rejectWithdrawal(new ErrorResponse("insufficient_funds", "Not enough money", null));
 
