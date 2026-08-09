@@ -4,6 +4,8 @@ import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -14,6 +16,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
 public class RequestLoggingFilter implements WebFilter {
 
 	private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
