@@ -38,7 +38,7 @@ public abstract class BaseExceptionHandler extends ResponseEntityExceptionHandle
 		ErrorResponse body = new ErrorResponse("validation_error", "Request validation failed",
 				new ValidationErrors(fields));
 
-		return ResponseEntity.status(status).body(body);
+		return ResponseEntity.status(status).headers(headers).body(body);
 	}
 
 	@Override
@@ -51,6 +51,6 @@ public abstract class BaseExceptionHandler extends ResponseEntityExceptionHandle
 		String code = resolved == null ? "error" : resolved.name().toLowerCase();
 		String message = resolved == null ? "Request processing failed" : resolved.getReasonPhrase();
 
-		return ResponseEntity.status(status).body(new ErrorResponse(code, message));
+		return ResponseEntity.status(status).headers(headers).body(new ErrorResponse(code, message));
 	}
 }
