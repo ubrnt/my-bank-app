@@ -240,7 +240,8 @@ tests inject authentication with `spring-security-test` and stub the services th
 ## API
 
 Service APIs need a Bearer JWT, `front-service` pages use the browser session. Errors share one
-shape, `{ code, message }`, plus `validationErrors` for field validation.
+shape, `{ code, message }`, plus `validationErrors` for field validation. A token that is missing,
+expired or carries no `preferred_username` claim gives `401`.
 
 ### `front-service` (browser, session)
 
@@ -267,7 +268,7 @@ shape, `{ code, message }`, plus `validationErrors` for field validation.
 | PUT | `/api/customers/me` | `customer:write` | `200`, `400` validation |
 | GET | `/api/customers/others` | `customer:others:read` | `200` other customers |
 | GET | `/api/customers/{uuid}` | `customer:any:read` | `200`, `404` unknown customer |
-| POST | `/api/transactions/deposit` | `transactions:write` | `200`, `404`, `409` replay with other details |
+| POST | `/api/transactions/deposit` | `transactions:write` | `200`, `404`, `409` replay with other details, `422` balance limit |
 | POST | `/api/transactions/withdraw` | `transactions:write` | `200`, `422` not enough money |
 | POST | `/api/transactions/transfer` | `transactions:write` | `200`, `422` not enough money or same account |
 
@@ -275,14 +276,14 @@ shape, `{ code, message }`, plus `validationErrors` for field validation.
 
 | Method | URL | Scope | Responses |
 |--------|-----|-------|-----------|
-| POST | `/api/cash/deposit` | `cash:write` | `200`, `400` bad request, `409` duplicate request, `422` rejected, `503` accounts down |
+| POST | `/api/cash/deposit` | `cash:write` | `200`, `400` bad request, `409` duplicate request or key conflict, `422` rejected, `503` accounts down |
 | POST | `/api/cash/withdraw` | `cash:write` | same |
 
 ### `transfer-service`
 
 | Method | URL | Scope | Responses |
 |--------|-----|-------|-----------|
-| POST | `/api/transfers` | `transfer:write` | `200`, `400` bad request, `409` duplicate request, `422` rejected, `503` accounts down |
+| POST | `/api/transfers` | `transfer:write` | `200`, `400` bad request, `409` duplicate request or key conflict, `422` rejected, `503` accounts down |
 
 ### `notifications-service`
 
@@ -445,8 +446,9 @@ erDiagram
 
 Orchestrator journals. A row is claimed under the client idempotency key, stays `PENDING` while
 the call to accounts runs, and ends as `COMPLETED` or `FAILED`. Account and customer ids arrive
-with the answer from accounts, so they are empty until then. The login is written at claim time,
-so a row that never got an answer still says whose request it was.
+with the answer from accounts, so they are empty until then. Logins are written at claim time,
+so a row that never got an answer still says whose request it was, and they take part in the
+request fingerprint: a repeat under the same key must carry the same details or it is rejected.
 
 ```mermaid
 erDiagram
@@ -468,6 +470,7 @@ erDiagram
         bigint id PK
         uuid uuid UK "idempotency key from the client"
         varchar from_customer_login "who asked, known from the start"
+        varchar to_customer_login "who it is for, part of the request fingerprint"
         uuid from_customer_uuid "accounts.customers.uuid"
         uuid from_account_uuid "accounts.accounts.uuid"
         uuid to_customer_uuid "accounts.customers.uuid"
@@ -487,6 +490,8 @@ The same table in three schemas, created by `bank-notifications-outbox-starter`.
 in the same transaction as the operation it describes. A relay picks up `PENDING` rows, sends them
 to `notifications-service` and marks them `PROCESSED`. Rows stuck in `PROCESSING` past
 `stale-timeout` are taken again, and a row that fails `max-attempts` times becomes `FAILED`.
+A failed delivery is put off to `next_attempt_at`, doubling the delay every time up to
+`max-retry-delay`.
 
 ```mermaid
 erDiagram
@@ -499,6 +504,7 @@ erDiagram
         uuid recipient_uuid "accounts.customers.uuid"
         jsonb payload "body of the event"
         varchar status "PENDING, PROCESSING, PROCESSED, FAILED"
+        timestamptz next_attempt_at "when the relay may take it, default now()"
         timestamptz locked_at "when the relay took it"
         timestamptz processed_at
         int attempts
