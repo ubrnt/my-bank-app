@@ -57,10 +57,10 @@ public class CashOperationJournal {
 	}
 
 	@Transactional
-	public CashOperation complete(long operationId, UUID accountUuid, UUID customerUuid,
+	public CashOperation complete(CashOperation claimed, UUID accountUuid, UUID customerUuid,
 			EventType eventType, TransactionResponse transaction) {
-		CashOperation operation = cashOperationRepository.findById(operationId).orElseThrow();
-		operation.complete(accountUuid, customerUuid);
+		claimed.complete(accountUuid, customerUuid);
+		CashOperation operation = cashOperationRepository.save(claimed);
 
 		notificationsOutboxService.save(eventType.name(), AggregateType.CASH_OPERATION.name(),
 				operation.getId(), customerUuid, MoneyEventPayloadDto.of(transaction));
@@ -69,10 +69,9 @@ public class CashOperationJournal {
 	}
 
 	@Transactional
-	public CashOperation fail(long operationId, String failureReason) {
-		CashOperation operation = cashOperationRepository.findById(operationId).orElseThrow();
-		operation.fail(failureReason);
+	public CashOperation fail(CashOperation claimed, String failureReason) {
+		claimed.fail(failureReason);
 
-		return operation;
+		return cashOperationRepository.save(claimed);
 	}
 }

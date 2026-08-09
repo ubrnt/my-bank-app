@@ -1,5 +1,8 @@
 package ru.yandex.practicum.mybank.cash.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.mybank.cash.client.AccountsClient;
 import ru.yandex.practicum.mybank.cash.client.TransactionRejectedException;
@@ -16,6 +19,8 @@ import java.util.UUID;
 
 @Service
 public class CashService {
+
+	private static final Logger log = LoggerFactory.getLogger(CashService.class);
 
 	private final AccountsClient accountsClient;
 	private final CashOperationJournal journal;
@@ -51,28 +56,47 @@ public class CashService {
 				case WITHDRAW -> accountsClient.withdraw(request);
 			};
 		} catch (TransactionRejectedException e) {
-			journal.fail(operation.getId(), e.getCode());
+			fail(operation, e.getCode());
 
 			throw e;
 		} catch (ServiceCallException e) {
-			journal.fail(operation.getId(), AccountsServiceUnavailableException.CODE);
+			fail(operation, AccountsServiceUnavailableException.CODE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}
 
-		CashOperation completedOperation = markCompleted(type, operation.getId(), transaction);
+		try {
+			return CashOperationDto.of(markCompleted(type, operation, transaction));
+		} catch (ObjectOptimisticLockingFailureException e) {
+			logReclaimed(operation);
 
-		return CashOperationDto.of(completedOperation);
+			return CashOperationDto.of(operation);
+		}
 	}
 
-	private CashOperation markCompleted(CashOperationType type, long operationId, TransactionResponse transaction) {
+	private CashOperation markCompleted(CashOperationType type, CashOperation operation,
+			TransactionResponse transaction) {
 		return switch (type) {
-			case DEPOSIT -> journal.complete(operationId,
+			case DEPOSIT -> journal.complete(operation,
 					transaction.operation().toAccountUuid(), transaction.operation().toCustomerUuid(),
 					EventType.MONEY_DEPOSITED, transaction);
-			case WITHDRAW -> journal.complete(operationId,
+			case WITHDRAW -> journal.complete(operation,
 					transaction.operation().fromAccountUuid(), transaction.operation().fromCustomerUuid(),
 					EventType.MONEY_WITHDRAWN, transaction);
 		};
+	}
+
+	private void fail(CashOperation operation, String failureReason) {
+		try {
+			journal.fail(operation, failureReason);
+		} catch (ObjectOptimisticLockingFailureException e) {
+			logReclaimed(operation);
+		}
+	}
+
+	private void logReclaimed(CashOperation operation) {
+		log.warn("Operation {} claimed at {} with version {} was reclaimed by a later request, "
+						+ "leaving the journal to its owner",
+				operation.getUuid(), operation.getUpdatedTs(), operation.getVersion());
 	}
 }

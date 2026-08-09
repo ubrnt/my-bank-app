@@ -85,6 +85,28 @@ class CashOrchestrationIntegrationTest {
 	}
 
 	@Test
+	void reclaimedOperationReturnsResultButSkipsJournalAndNotification() {
+		when(accountsClient.deposit(any())).thenAnswer(invocation -> {
+			reclaimByAnotherRequest();
+
+			return response(invocation.getArgument(0, TransactionRequest.class), "deposit");
+		});
+
+		CashOperationDto result = cashService.deposit(IDEMPOTENCY_KEY, "user1", 500);
+
+		assertThat(result.uuid()).isEqualTo(IDEMPOTENCY_KEY);
+		assertThat(result.amount()).isEqualTo(500);
+		assertThat(result.status()).isEqualTo(CashOperationStatus.COMPLETED);
+
+		Map<String, Object> operation = jdbcTemplate.queryForMap("select * from cash_operations");
+		assertThat(operation.get("status")).isEqualTo("PENDING");
+		assertThat(operation.get("account_uuid")).isNull();
+
+		Long events = jdbcTemplate.queryForObject("select count(*) from notifications_outbox", Long.class);
+		assertThat(events).isZero();
+	}
+
+	@Test
 	void rejectedWithdrawalFailsJournalWithoutEvent() {
 		when(accountsClient.withdraw(any()))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
@@ -241,6 +263,10 @@ class CashOrchestrationIntegrationTest {
 
 	private long operationCount() {
 		return jdbcTemplate.queryForObject("select count(*) from cash_operations", Long.class);
+	}
+
+	private void reclaimByAnotherRequest() {
+		jdbcTemplate.update("update cash_operations set version = version + 1 where uuid = ?", IDEMPOTENCY_KEY);
 	}
 
 	private TransactionResponse response(TransactionRequest request, String type) {
