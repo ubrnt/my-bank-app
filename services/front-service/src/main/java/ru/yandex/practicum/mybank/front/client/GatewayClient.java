@@ -5,10 +5,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
+import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 import ru.yandex.practicum.mybank.front.client.dto.CashRequest;
 import ru.yandex.practicum.mybank.front.client.dto.CustomerResponse;
 import ru.yandex.practicum.mybank.front.client.dto.CustomerSummaryResponse;
-import ru.yandex.practicum.mybank.front.client.dto.ErrorResponse;
 import ru.yandex.practicum.mybank.front.client.dto.TransferRequest;
 import ru.yandex.practicum.mybank.front.client.dto.UpdateProfileRequest;
 

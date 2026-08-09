@@ -6,11 +6,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.stubrunner.spring.AutoConfigureStubRunner;
 import org.springframework.cloud.contract.stubrunner.spring.StubRunnerProperties;
 import org.springframework.context.annotation.Import;
+import ru.yandex.practicum.mybank.chassis.web.FieldError;
 import ru.yandex.practicum.mybank.front.client.GatewayClient;
 import ru.yandex.practicum.mybank.front.client.GatewayException;
 import ru.yandex.practicum.mybank.front.client.dto.CustomerResponse;
 import ru.yandex.practicum.mybank.front.client.dto.CustomerSummaryResponse;
-import ru.yandex.practicum.mybank.front.client.dto.FieldError;
 import ru.yandex.practicum.mybank.front.client.dto.UpdateProfileRequest;
 
 import java.time.LocalDate;

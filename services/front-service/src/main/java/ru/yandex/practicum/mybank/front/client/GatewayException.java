@@ -1,7 +1,7 @@
 package ru.yandex.practicum.mybank.front.client;
 
 import org.jspecify.annotations.Nullable;
-import ru.yandex.practicum.mybank.front.client.dto.ErrorResponse;
+import ru.yandex.practicum.mybank.chassis.web.ErrorResponse;
 
 public class GatewayException extends RuntimeException {
 
