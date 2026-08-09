@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ru.yandex.practicum.mybank.chassis.web.JwtLogin;
 import ru.yandex.practicum.mybank.cash.dto.CashOperationResponse;
 import ru.yandex.practicum.mybank.cash.dto.CashRequest;
 import ru.yandex.practicum.mybank.cash.service.CashService;
@@ -27,16 +28,13 @@ public class CashController {
 	@PostMapping("/deposit")
 	public CashOperationResponse deposit(@RequestHeader("Idempotency-Key") UUID idempotencyKey,
 			@Valid @RequestBody CashRequest request, @AuthenticationPrincipal Jwt jwt) {
-		return CashOperationResponse.of(cashService.deposit(idempotencyKey, login(jwt), request.amount()));
+		return CashOperationResponse.of(cashService.deposit(idempotencyKey, JwtLogin.of(jwt), request.amount()));
 	}
 
 	@PostMapping("/withdraw")
 	public CashOperationResponse withdraw(@RequestHeader("Idempotency-Key") UUID idempotencyKey,
 			@Valid @RequestBody CashRequest request, @AuthenticationPrincipal Jwt jwt) {
-		return CashOperationResponse.of(cashService.withdraw(idempotencyKey, login(jwt), request.amount()));
+		return CashOperationResponse.of(cashService.withdraw(idempotencyKey, JwtLogin.of(jwt), request.amount()));
 	}
 
-	private String login(Jwt jwt) {
-		return jwt.getClaimAsString("preferred_username");
-	}
 }
