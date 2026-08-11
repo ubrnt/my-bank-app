@@ -1,21 +1,55 @@
 spring:
   application:
     name: cash-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
   config:
-    import: "consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      config:
-        format: YAML
-        profile-separator: /
-        watch:
-          enabled: false
-      discovery:
-        prefer-ip-address: true
+    import:
+      - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-persistence-defaults.yml"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/my_bank_app
+    username: cash_service
+    password: ${CASH_DB_PASSWORD:cash}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: cash
+  liquibase:
+    default-schema: cash
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences: cash-service
+      client:
+        registration:
+          accounts-service:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
+            authorization-grant-type: client_credentials
+            scope: transactions:write
+          notifications-service:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications:write
+
+mybank:
+  cash:
+    pending-timeout: 30s
+  clients:
+    base-urls:
+      accounts-service: http://localhost:8082
+      notifications-service: http://localhost:8083
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts-service:
+        base-config: default
+      notifications-service:
+        base-config: default
 
 server:
   port: 8084

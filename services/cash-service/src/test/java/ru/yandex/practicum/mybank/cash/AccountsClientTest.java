@@ -40,8 +40,8 @@ class AccountsClientTest {
 	private JwtDecoder jwtDecoder;
 
 	@DynamicPropertySource
-	static void discovery(DynamicPropertyRegistry registry) {
-		registry.add("spring.cloud.discovery.client.simple.instances.accounts-service[0].uri", accounts::baseUrl);
+	static void accountsAddress(DynamicPropertyRegistry registry) {
+		registry.add("mybank.clients.base-urls.accounts-service", accounts::baseUrl);
 	}
 
 	@Test
