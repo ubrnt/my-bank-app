@@ -3,12 +3,10 @@ package ru.yandex.practicum.mybank.chassis.client;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.restclient.autoconfigure.RestClientBuilderConfigurer;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerInterceptor;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerRequestFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
@@ -20,6 +18,7 @@ import org.springframework.web.client.RestClient;
 		afterName = "org.springframework.boot.security.oauth2.client.autoconfigure.OAuth2ClientAutoConfiguration",
 		beforeName = "org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration")
 @ConditionalOnBean(ClientRegistrationRepository.class)
+@EnableConfigurationProperties(ClientsProperties.class)
 public class ClientAutoConfiguration {
 
 	@Bean
@@ -45,10 +44,7 @@ public class ClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ServiceClientFactory serviceClientFactory(RestClient.Builder builder,
 			OAuth2AuthorizedClientManager clientManager, CircuitBreakerFactory<?, ?> circuitBreakerFactory,
-			LoadBalancerClient loadBalancerClient, LoadBalancerRequestFactory loadBalancerRequestFactory) {
-		LoadBalancerInterceptor loadBalancerInterceptor =
-				new LoadBalancerInterceptor(loadBalancerClient, loadBalancerRequestFactory);
-
-		return new ServiceClientFactory(builder, clientManager, circuitBreakerFactory, loadBalancerInterceptor);
+			ClientsProperties clients) {
+		return new ServiceClientFactory(builder, clientManager, circuitBreakerFactory, clients);
 	}
 }
