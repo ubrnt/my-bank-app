@@ -31,7 +31,7 @@ public class NotificationsOutboxRelay {
 				});
 	}
 
-	@Scheduled(fixedDelayString = "${mybank.notifications.outbox.poll-interval}")
+	@Scheduled(fixedDelayString = "${mybank.notifications.outbox.poll-interval:5s}")
 	public void relayPending() {
 		processor.run();
 	}

@@ -7,10 +7,10 @@ import java.time.Duration;
 
 @ConfigurationProperties("mybank.notifications.outbox")
 public record NotificationsOutboxProperties(
-		Duration pollInterval,
-		int batchSize,
-		Duration staleTimeout,
-		int maxAttempts,
+		@DefaultValue("5s") Duration pollInterval,
+		@DefaultValue("20") int batchSize,
+		@DefaultValue("5m") Duration staleTimeout,
+		@DefaultValue("6") int maxAttempts,
 		@DefaultValue("5s") Duration retryDelay,
 		@DefaultValue("1m") Duration maxRetryDelay
 ) {
