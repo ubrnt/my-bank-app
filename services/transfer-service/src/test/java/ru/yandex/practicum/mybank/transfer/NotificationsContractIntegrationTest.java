@@ -29,10 +29,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "mybank.clients.base-urls.notifications-service=http://localhost:8097")
 @AutoConfigureMockMvc
 @AutoConfigureStubRunner(
-		ids = "ru.yandex.practicum:notifications-service:+:stubs",
+		ids = "ru.yandex.practicum:notifications-service:+:stubs:8097",
 		stubsMode = StubRunnerProperties.StubsMode.LOCAL)
 @Import({PostgresContainerConfig.class, FakeTokenConfig.class})
 class NotificationsContractIntegrationTest {
