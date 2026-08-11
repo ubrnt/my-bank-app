@@ -1,9 +1,6 @@
 spring:
   application:
     name: front-service
-  cloud:
-    consul:
-      enabled: false
     contract:
       stubrunner:
         cloud:
@@ -26,3 +23,8 @@ spring:
             jwk-set-uri: http://localhost/realms/my-bank/protocol/openid-connect/certs
             user-info-uri: http://localhost/realms/my-bank/protocol/openid-connect/userinfo
             user-name-attribute: preferred_username
+
+mybank:
+  clients:
+    base-urls:
+      gateway: http://localhost:8081

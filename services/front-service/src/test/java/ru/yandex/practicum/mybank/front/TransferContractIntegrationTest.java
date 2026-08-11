@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(properties =
-		"spring.cloud.discovery.client.simple.instances.gateway-service[0].uri=http://localhost:8092")
+		"mybank.clients.base-urls.gateway=http://localhost:8092")
 @AutoConfigureStubRunner(
 		ids = "ru.yandex.practicum:transfer-service:+:stubs:8092",
 		stubsMode = StubRunnerProperties.StubsMode.LOCAL)

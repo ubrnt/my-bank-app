@@ -1,21 +1,53 @@
 spring:
   application:
     name: front-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
   config:
-    import: "consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      config:
-        format: YAML
-        profile-separator: /
-        watch:
-          enabled: false
-      discovery:
-        prefer-ip-address: true
+    import: "classpath:bank-chassis-defaults.yml"
+  http:
+    clients:
+      read-timeout: 25s
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: front-service
+            client-secret: ${FRONT_SERVICE_SECRET:front-service-secret}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile
+              - customer:read
+              - customer:write
+              - customer:others:read
+              - cash:write
+              - transfer:write
+        provider:
+          keycloak:
+            authorization-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/auth
+            token-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/token
+            jwk-set-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/certs
+            user-info-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
+
+mybank:
+  clients:
+    base-urls:
+      gateway: http://localhost:8081
+  oauth2:
+    end-session-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/logout
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gateway:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 30s
 
 server:
   port: 8080
