@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: accounts-service
+  cloud:
+    consul:
+      enabled: false
+  jackson:
+    default-property-inclusion: non_null
+  security:
+    oauth2:
+      client:
+        registration:
+          notifications-service:
+            provider: keycloak
+            client-id: accounts-service
+            client-secret: test-secret
+            authorization-grant-type: client_credentials
+            scope: notifications:write
+        provider:
+          keycloak:
+            token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
+
+mybank:
+  notifications:
+    outbox:
+      enabled: false
+      poll-interval: 5s
+      batch-size: 20
+      stale-timeout: 5m
+      max-attempts: 5
+      retry-delay: 0s
+      max-retry-delay: 0s

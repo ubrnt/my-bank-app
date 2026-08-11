@@ -1,0 +1,31 @@
+spring:
+  reactor:
+    context-propagation: auto
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 15s
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts-service:
+        base-config: default
+      cash-service:
+        base-config: default
+      transfer-service:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 20s
+    instances:
+      accounts-service:
+        base-config: default
+      cash-service:
+        base-config: default
+      transfer-service:
+        base-config: default

@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    username: cash_service
+    password: ${CASH_DB_PASSWORD:cash}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences: cash-service
+      client:
+        registration:
+          accounts-service:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
+            authorization-grant-type: client_credentials
+            scope: transactions:write
+          notifications-service:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications:write
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: cash
+  liquibase:
+    default-schema: cash
+
+mybank:
+  cash:
+    pending-timeout: 30s
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts-service:
+        base-config: default
+      notifications-service:
+        base-config: default

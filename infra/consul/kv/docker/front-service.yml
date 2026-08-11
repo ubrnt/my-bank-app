@@ -1,0 +1,10 @@
+spring:
+  security:
+    oauth2:
+      client:
+        provider:
+          keycloak:
+            authorization-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/auth
+            token-uri: http://keycloak:8080/realms/my-bank/protocol/openid-connect/token
+            jwk-set-uri: http://keycloak:8080/realms/my-bank/protocol/openid-connect/certs
+            user-info-uri: http://keycloak:8080/realms/my-bank/protocol/openid-connect/userinfo

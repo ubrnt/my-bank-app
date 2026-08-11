@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    username: accounts_service
+    password: ${ACCOUNTS_DB_PASSWORD:accounts}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences: accounts-service
+      client:
+        registration:
+          notifications-service:
+            provider: keycloak
+            client-id: accounts-service
+            client-secret: ${ACCOUNTS_SERVICE_SECRET:accounts-service-secret}
+            authorization-grant-type: client_credentials
+            scope: notifications:write
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: accounts
+  liquibase:
+    default-schema: accounts
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      notifications-service:
+        base-config: default
