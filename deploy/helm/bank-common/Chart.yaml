@@ -1,0 +1,5 @@
+apiVersion: v2
+name: bank-common
+description: Shared templates for my-bank service charts
+type: library
+version: 1.0.0

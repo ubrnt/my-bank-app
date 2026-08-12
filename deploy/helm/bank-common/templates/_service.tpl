@@ -1,0 +1,17 @@
+{{- define "bank-common.service" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bank-common.name" . }}
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "bank-common.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- end -}}
