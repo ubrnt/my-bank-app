@@ -12,7 +12,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: health
-      image: {{ .Values.tests.image }}
+      image: {{ (.Values.tests | default dict).image | default "curlimages/curl:8.11.1" }}
       command:
         - sh
         - -c

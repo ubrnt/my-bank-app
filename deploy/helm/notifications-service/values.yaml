@@ -1,0 +1,64 @@
+replicaCount: 1
+
+image:
+  repository: my-bank/notifications-service
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8083
+
+resources: {}
+
+startupProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  periodSeconds: 3
+  failureThreshold: 40
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 20
+
+existingSecret: ""
+
+secrets:
+  NOTIFICATIONS_DB_PASSWORD: notifications
+  NOTIFICATIONS_SERVICE_SECRET: notifications-service-secret
+
+database:
+  image: postgres:17-alpine
+  name: notifications
+  user: notifications_service
+  schema: notifications
+  passwordSecretKey: NOTIFICATIONS_DB_PASSWORD
+  storage: 1Gi
+  resources: {}
+
+config:
+  spring:
+    datasource:
+      url: jdbc:postgresql://{{ include "bank-common.databaseName" . }}:5432/notifications
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            issuer-uri: http://localhost:8180/realms/my-bank
+            jwk-set-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/certs
+        client:
+          provider:
+            keycloak:
+              token-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/token
+  mybank:
+    clients:
+      base-urls:
+        accounts-service: http://accounts-service:8082
