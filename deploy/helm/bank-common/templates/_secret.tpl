@@ -9,7 +9,7 @@ metadata:
 type: Opaque
 stringData:
   {{- range $key, $value := .Values.secrets }}
-  {{ $key }}: {{ $value | quote }}
+  {{ $key }}: {{ required (printf "%s is not set: pass it with --set or point existingSecret at a secret you created" $key) $value | quote }}
   {{- end }}
 {{- end -}}
 {{- end -}}
