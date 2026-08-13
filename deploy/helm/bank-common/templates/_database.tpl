@@ -14,7 +14,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "bank-common.databaseSelectorLabels" . | nindent 8 }}
+        {{- include "bank-common.databaseLabels" . | nindent 8 }}
     spec:
       containers:
         - name: postgres

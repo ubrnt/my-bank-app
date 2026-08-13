@@ -15,7 +15,7 @@ spec:
       annotations:
         checksum/config: {{ include "bank-common.configmap" . | sha256sum }}
       labels:
-        {{- include "bank-common.selectorLabels" . | nindent 8 }}
+        {{- include "bank-common.labels" . | nindent 8 }}
     spec:
       containers:
         - name: {{ include "bank-common.name" . }}
