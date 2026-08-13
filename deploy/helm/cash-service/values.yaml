@@ -1,0 +1,65 @@
+replicaCount: 1
+
+image:
+  repository: my-bank/cash-service
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  port: 8084
+
+resources: {}
+
+startupProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  periodSeconds: 3
+  failureThreshold: 40
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  periodSeconds: 20
+
+existingSecret: ""
+
+secrets:
+  CASH_DB_PASSWORD: cash
+  CASH_SERVICE_SECRET: cash-service-secret
+
+database:
+  image: postgres:17-alpine
+  name: cash
+  user: cash_service
+  schema: cash
+  passwordSecretKey: CASH_DB_PASSWORD
+  storage: 1Gi
+  resources: {}
+
+config:
+  spring:
+    datasource:
+      url: jdbc:postgresql://{{ include "bank-common.databaseName" . }}:5432/cash
+    security:
+      oauth2:
+        resourceserver:
+          jwt:
+            issuer-uri: http://localhost:8180/realms/my-bank
+            jwk-set-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/certs
+        client:
+          provider:
+            keycloak:
+              token-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/token
+  mybank:
+    clients:
+      base-urls:
+        accounts-service: http://accounts-service:8082
+        notifications-service: http://notifications-service:8083

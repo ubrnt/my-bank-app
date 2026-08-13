@@ -1,0 +1,5 @@
+{{ include "bank-common.databaseInit" . }}
+---
+{{ include "bank-common.databaseService" . }}
+---
+{{ include "bank-common.database" . }}
