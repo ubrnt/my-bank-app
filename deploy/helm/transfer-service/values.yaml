@@ -40,7 +40,7 @@ livenessProbe:
 existingSecret: ""
 
 secrets:
-  TRANSFER_DB_PASSWORD: transfer
+  TRANSFER_DB_PASSWORD: ""
   TRANSFER_SERVICE_SECRET: transfer-service-secret
 
 database:
