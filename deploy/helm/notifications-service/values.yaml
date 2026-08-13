@@ -8,7 +8,15 @@ image:
 service:
   port: 8083
 
-resources: {}
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+env:
+  JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65
 
 startupProbe:
   httpGet:
@@ -42,7 +50,6 @@ database:
   schema: notifications
   passwordSecretKey: NOTIFICATIONS_DB_PASSWORD
   storage: 1Gi
-  resources: {}
 
 config:
   spring:
