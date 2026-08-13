@@ -10,6 +10,10 @@ cash-service:
 transfer-service:
   enabled: true
 
+tests:
+  image: curlimages/curl:8.11.1
+  gatewayUrl: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local
+
 ingress:
   enabled: true
   className: nginx

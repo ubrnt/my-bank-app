@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Chart.Name }}-smoke-test
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: my-bank
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-weight: "10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: smoke
+      image: {{ .Values.tests.image }}
+      env:
+        - name: GATEWAY
+          value: {{ .Values.tests.gatewayUrl }}
+      command:
+        - sh
+        - -c
+        - |
+          set -e
+
+          echo "a request without a token must get 401"
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$GATEWAY/api/customers/me")
+          test "$code" = "401" || { echo "got $code"; exit 1; }
+
+          echo "a request with a bad token must get 401, not 500"
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+            -H 'Authorization: Bearer not-a-real-token' "$GATEWAY/api/customers/me")
+          test "$code" = "401" || { echo "got $code"; exit 1; }
+
+          echo "the ingress route and the token check work"
