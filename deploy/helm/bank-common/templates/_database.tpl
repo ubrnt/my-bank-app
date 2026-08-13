@@ -44,10 +44,12 @@ spec:
               command: ["pg_isready", "-U", {{ .Values.database.user | quote }}, "-d", {{ .Values.database.name | quote }}]
             initialDelaySeconds: 20
             periodSeconds: 20
-          {{- with .Values.database.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- if .Values.database.resources }}
+            {{- toYaml .Values.database.resources | nindent 12 }}
+            {{- else }}
+            {{- include "bank-common.databaseResources" . | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data

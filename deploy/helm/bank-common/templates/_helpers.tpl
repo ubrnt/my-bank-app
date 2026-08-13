@@ -6,6 +6,14 @@
 {{- printf "%s-db" .Chart.Name -}}
 {{- end -}}
 
+{{- define "bank-common.databaseResources" -}}
+requests:
+  cpu: 50m
+  memory: 64Mi
+limits:
+  memory: 256Mi
+{{- end -}}
+
 {{- define "bank-common.labels" -}}
 app.kubernetes.io/name: {{ include "bank-common.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
