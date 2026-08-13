@@ -40,7 +40,7 @@ livenessProbe:
 existingSecret: ""
 
 secrets:
-  NOTIFICATIONS_DB_PASSWORD: notifications
+  NOTIFICATIONS_DB_PASSWORD: ""
   NOTIFICATIONS_SERVICE_SECRET: notifications-service-secret
 
 database:
