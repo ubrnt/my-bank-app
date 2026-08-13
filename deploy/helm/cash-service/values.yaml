@@ -40,7 +40,7 @@ livenessProbe:
 existingSecret: ""
 
 secrets:
-  CASH_DB_PASSWORD: cash
+  CASH_DB_PASSWORD: ""
   CASH_SERVICE_SECRET: cash-service-secret
 
 database:
