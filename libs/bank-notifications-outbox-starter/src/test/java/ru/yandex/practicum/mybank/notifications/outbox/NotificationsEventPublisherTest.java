@@ -56,7 +56,7 @@ class NotificationsEventPublisherTest {
 
 		publisher.send(new NotificationEvent(EVENT_UUID, "money_deposited", RECIPIENT_UUID, PAYLOAD_JSON));
 
-		ConsumerRecord<String, String> record = readSingleRecord();
+		ConsumerRecord<String, String> record = readSingleRecordFrom(TOPIC);
 
 		assertThat(record.key()).isEqualTo(RECIPIENT_UUID.toString());
 		assertThat(record.headers().toArray()).isEmpty();
@@ -90,15 +90,19 @@ class NotificationsEventPublisherTest {
 		}
 	}
 
-	private ConsumerRecord<String, String> readSingleRecord() {
-		Map<String, Object> consumerProps = KafkaTestUtils.consumerProps(broker, "test-group", true);
-		DefaultKafkaConsumerFactory<String, String> consumerFactory = new DefaultKafkaConsumerFactory<>(consumerProps,
-				new StringDeserializer(), new StringDeserializer());
-
-		try (Consumer<String, String> consumer = consumerFactory.createConsumer()) {
-			broker.consumeFromEmbeddedTopics(consumer, TOPIC);
-
-			return KafkaTestUtils.getSingleRecord(consumer, TOPIC, Duration.ofSeconds(10));
+	private ConsumerRecord<String, String> readSingleRecordFrom(String topic) {
+		try (Consumer<String, String> consumer = consumerSubscribedTo(topic)) {
+			return KafkaTestUtils.getSingleRecord(consumer, topic, Duration.ofSeconds(10));
 		}
+	}
+
+	private Consumer<String, String> consumerSubscribedTo(String topic) {
+		Map<String, Object> consumerProps = KafkaTestUtils.consumerProps(broker, "test-group", true);
+		Consumer<String, String> consumer = new DefaultKafkaConsumerFactory<>(consumerProps,
+				new StringDeserializer(), new StringDeserializer()).createConsumer();
+
+		broker.consumeFromEmbeddedTopics(consumer, topic);
+
+		return consumer;
 	}
 }
