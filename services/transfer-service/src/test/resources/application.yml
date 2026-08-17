@@ -1,4 +1,9 @@
 spring:
+  cloud:
+    contract:
+      stubrunner:
+        cloud:
+          enabled: false
   application:
     name: transfer-service
   jackson:
