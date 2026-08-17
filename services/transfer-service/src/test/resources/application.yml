@@ -8,6 +8,12 @@ spring:
     name: transfer-service
   jackson:
     default-property-inclusion: non_null
+  kafka:
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        spring.json.add.type.headers: false
   security:
     oauth2:
       client:
@@ -18,12 +24,6 @@ spring:
             client-secret: test-secret
             authorization-grant-type: client_credentials
             scope: transactions:write
-          notifications-service:
-            provider: keycloak
-            client-id: transfer-service
-            client-secret: test-secret
-            authorization-grant-type: client_credentials
-            scope: notifications:write
         provider:
           keycloak:
             token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
@@ -32,7 +32,6 @@ mybank:
   clients:
     base-urls:
       accounts-service: http://localhost:8082
-      notifications-service: http://localhost:8083
   notifications:
     outbox:
       enabled: false
