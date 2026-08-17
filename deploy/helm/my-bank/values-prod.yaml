@@ -1,0 +1,38 @@
+accounts-service:
+  replicaCount: 2
+  existingSecret: my-bank-accounts
+  database:
+    storage: 10Gi
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: INFO
+
+notifications-service:
+  existingSecret: my-bank-notifications
+  database:
+    storage: 5Gi
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: INFO
+
+cash-service:
+  replicaCount: 2
+  existingSecret: my-bank-cash
+  database:
+    storage: 10Gi
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: INFO
+
+transfer-service:
+  replicaCount: 2
+  existingSecret: my-bank-transfer
+  database:
+    storage: 10Gi
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: INFO

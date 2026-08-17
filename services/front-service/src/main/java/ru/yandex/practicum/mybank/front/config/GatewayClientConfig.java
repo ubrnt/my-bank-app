@@ -13,7 +13,7 @@ import ru.yandex.practicum.mybank.chassis.client.ServiceClientFactory;
 @Configuration
 public class GatewayClientConfig {
 
-	private static final String GATEWAY_SERVICE_ID = "gateway-service";
+	private static final String GATEWAY_ID = "gateway";
 	private static final String REGISTRATION_ID = "keycloak";
 
 	@Bean
@@ -24,6 +24,6 @@ public class GatewayClientConfig {
 
 	@Bean
 	public RestClient gatewayRestClient(ServiceClientFactory factory) {
-		return factory.restClient(GATEWAY_SERVICE_ID, REGISTRATION_ID, CircuitBreakerPolicy.TRANSPORT_ONLY);
+		return factory.restClient(GATEWAY_ID, REGISTRATION_ID, CircuitBreakerPolicy.TRANSPORT_ONLY);
 	}
 }

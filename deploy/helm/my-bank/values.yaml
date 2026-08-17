@@ -1,0 +1,29 @@
+accounts-service:
+  enabled: true
+
+notifications-service:
+  enabled: true
+
+cash-service:
+  enabled: true
+
+transfer-service:
+  enabled: true
+
+tests:
+  image: curlimages/curl:8.11.1
+  gatewayUrl: http://ingress-nginx-controller.ingress-nginx.svc.cluster.local
+
+ingress:
+  enabled: true
+  className: nginx
+  routes:
+    - path: /api/customers
+      service: accounts-service
+      port: 8082
+    - path: /api/cash
+      service: cash-service
+      port: 8084
+    - path: /api/transfers
+      service: transfer-service
+      port: 8085

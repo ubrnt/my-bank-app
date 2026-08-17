@@ -1,21 +1,44 @@
 spring:
   application:
     name: notifications-service
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
   config:
-    import: "consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      config:
-        format: YAML
-        profile-separator: /
-        watch:
-          enabled: false
-      discovery:
-        prefer-ip-address: true
+    import:
+      - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-persistence-defaults.yml"
+  datasource:
+    url: jdbc:postgresql://localhost:5432/my_bank_app
+    username: notifications_service
+    password: ${NOTIFICATIONS_DB_PASSWORD:notifications}
+  jpa:
+    properties:
+      hibernate:
+        default_schema: notifications
+  liquibase:
+    default-schema: notifications
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          audiences: notifications-service
+      client:
+        registration:
+          accounts-service:
+            provider: keycloak
+            client-id: notifications-service
+            client-secret: ${NOTIFICATIONS_SERVICE_SECRET:notifications-service-secret}
+            authorization-grant-type: client_credentials
+            scope: customer:any:read
+
+mybank:
+  clients:
+    base-urls:
+      accounts-service: http://localhost:8082
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accounts-service:
+        base-config: default
 
 server:
   port: 8083

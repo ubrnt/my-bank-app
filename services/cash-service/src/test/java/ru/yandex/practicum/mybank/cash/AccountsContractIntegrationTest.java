@@ -18,9 +18,9 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
+@SpringBootTest(properties = "mybank.clients.base-urls.accounts-service=http://localhost:8094")
 @AutoConfigureStubRunner(
-		ids = "ru.yandex.practicum:accounts-service:+:stubs",
+		ids = "ru.yandex.practicum:accounts-service:+:stubs:8094",
 		stubsMode = StubRunnerProperties.StubsMode.LOCAL)
 @Import({PostgresContainerConfig.class, FakeTokenConfig.class})
 class AccountsContractIntegrationTest {

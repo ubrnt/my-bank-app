@@ -1,0 +1,23 @@
+accounts-service:
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: DEBUG
+
+notifications-service:
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: DEBUG
+
+cash-service:
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: DEBUG
+
+transfer-service:
+  config:
+    logging:
+      level:
+        ru.yandex.practicum.mybank: DEBUG

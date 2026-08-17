@@ -1,9 +1,6 @@
 spring:
   application:
     name: cash-service
-  cloud:
-    consul:
-      enabled: false
   jackson:
     default-property-inclusion: non_null
   security:
@@ -27,6 +24,10 @@ spring:
             token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
 
 mybank:
+  clients:
+    base-urls:
+      accounts-service: http://localhost:8082
+      notifications-service: http://localhost:8083
   notifications:
     outbox:
       enabled: false
