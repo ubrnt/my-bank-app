@@ -28,12 +28,18 @@ spring:
             client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
             authorization-grant-type: client_credentials
             scope: transactions:write
-          notifications-service:
-            provider: keycloak
-            client-id: cash-service
-            client-secret: ${CASH_SERVICE_SECRET:cash-service-secret}
-            authorization-grant-type: client_credentials
-            scope: notifications:write
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        enable.idempotence: true
+        spring.json.add.type.headers: false
+        delivery.timeout.ms: 8000
+        request.timeout.ms: 3000
+        max.block.ms: 3000
 
 mybank:
   cash:
@@ -41,14 +47,11 @@ mybank:
   clients:
     base-urls:
       accounts-service: http://localhost:8082
-      notifications-service: http://localhost:8083
 
 resilience4j:
   circuitbreaker:
     instances:
       accounts-service:
-        base-config: default
-      notifications-service:
         base-config: default
 
 server:
