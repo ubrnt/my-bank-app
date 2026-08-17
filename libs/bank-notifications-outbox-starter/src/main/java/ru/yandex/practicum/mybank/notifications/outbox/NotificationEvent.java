@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 
 import java.util.UUID;
 
-public record NotificationRequest(
+public record NotificationEvent(
 		UUID eventUuid,
 		String type,
 		UUID recipientUuid,

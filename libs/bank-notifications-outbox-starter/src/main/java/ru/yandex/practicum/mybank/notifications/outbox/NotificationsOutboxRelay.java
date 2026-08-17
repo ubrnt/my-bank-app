@@ -15,10 +15,10 @@ public class NotificationsOutboxRelay {
 	private final BatchProcessor<NotificationsOutboxEvent> processor;
 
 	public NotificationsOutboxRelay(NotificationsOutboxService notificationsOutboxService,
-			NotificationsClient notificationsClient) {
+			NotificationsEventPublisher notificationsEventPublisher) {
 		this.processor = new BatchProcessor<>(
 				notificationsOutboxService::claim,
-				event -> notificationsClient.send(new NotificationRequest(
+				event -> notificationsEventPublisher.send(new NotificationEvent(
 						event.getUuid(), event.getEventType().toLowerCase(Locale.ROOT),
 						event.getRecipientUuid(), event.getPayload())),
 				event -> notificationsOutboxService.markProcessed(event.getId()),

@@ -30,7 +30,7 @@ class NotificationsOutboxRelayTest {
 	private NotificationsOutboxService notificationsOutboxService;
 
 	@Mock
-	private NotificationsClient notificationsClient;
+	private NotificationsEventPublisher notificationsEventPublisher;
 
 	@InjectMocks
 	private NotificationsOutboxRelay notificationsOutboxRelay;
@@ -41,7 +41,7 @@ class NotificationsOutboxRelayTest {
 
 		notificationsOutboxRelay.relayPending();
 
-		verifyNoInteractions(notificationsClient);
+		verifyNoInteractions(notificationsEventPublisher);
 	}
 
 	@Test
@@ -51,14 +51,14 @@ class NotificationsOutboxRelayTest {
 
 		notificationsOutboxRelay.relayPending();
 
-		ArgumentCaptor<NotificationRequest> captor = ArgumentCaptor.forClass(NotificationRequest.class);
-		verify(notificationsClient).send(captor.capture());
+		ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+		verify(notificationsEventPublisher).send(captor.capture());
 
-		NotificationRequest request = captor.getValue();
-		assertThat(request.eventUuid()).isEqualTo(event.getUuid());
-		assertThat(request.type()).isEqualTo("customer_updated");
-		assertThat(request.recipientUuid()).isEqualTo(RECIPIENT_UUID);
-		assertThat(request.payload()).isEqualTo(PAYLOAD_JSON);
+		NotificationEvent published = captor.getValue();
+		assertThat(published.eventUuid()).isEqualTo(event.getUuid());
+		assertThat(published.type()).isEqualTo("customer_updated");
+		assertThat(published.recipientUuid()).isEqualTo(RECIPIENT_UUID);
+		assertThat(published.payload()).isEqualTo(PAYLOAD_JSON);
 
 		verify(notificationsOutboxService).markProcessed(1L);
 	}
@@ -68,7 +68,7 @@ class NotificationsOutboxRelayTest {
 		NotificationsOutboxEvent event = claimed(1L);
 		when(notificationsOutboxService.claim()).thenReturn(List.of(event));
 		doThrow(new NotificationDeliveryException(event.getUuid(), new ConnectException("Connection refused")))
-				.when(notificationsClient).send(any());
+				.when(notificationsEventPublisher).send(any());
 
 		notificationsOutboxRelay.relayPending();
 
@@ -83,7 +83,7 @@ class NotificationsOutboxRelayTest {
 		when(notificationsOutboxService.claim()).thenReturn(List.of(failing, succeeding));
 		doThrow(new NotificationDeliveryException(failing.getUuid(), new ConnectException("Connection refused")))
 				.doNothing()
-				.when(notificationsClient).send(any());
+				.when(notificationsEventPublisher).send(any());
 
 		notificationsOutboxRelay.relayPending();
 

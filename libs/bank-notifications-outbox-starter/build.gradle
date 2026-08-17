@@ -11,8 +11,10 @@ dependencyManagement {
 dependencies {
 	api project(':bank-persistence-starter')
 	api project(':bank-chassis')
+	api 'org.springframework.boot:spring-boot-starter-kafka'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.boot:spring-boot-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:postgresql'
