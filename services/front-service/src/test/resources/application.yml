@@ -1,10 +1,11 @@
 spring:
-  application:
-    name: front-service
+  cloud:
     contract:
       stubrunner:
         cloud:
           enabled: false
+  application:
+    name: front-service
   security:
     oauth2:
       client:
