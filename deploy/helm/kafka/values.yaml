@@ -21,7 +21,7 @@ resources:
     cpu: 100m
     memory: 256Mi
   limits:
-    memory: 768Mi
+    memory: 1Gi
 
 config:
   offsetsTopicReplicationFactor: 1
