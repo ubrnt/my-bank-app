@@ -6,6 +6,9 @@ plugins {
 
 contracts {
 	baseClassForTests = 'ru.yandex.practicum.mybank.cash.contracts.ContractsBase'
+	baseClassMappings {
+		baseClassMapping('.*notifications.*', 'ru.yandex.practicum.mybank.cash.contracts.NotificationEventsBase')
+	}
 }
 
 publishing {
@@ -37,6 +40,7 @@ dependencies {
 	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
+	contractTestImplementation project(':bank-contract-kafka')
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
 	testImplementation 'org.wiremock:wiremock-standalone'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
