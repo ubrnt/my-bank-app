@@ -3,7 +3,8 @@ plugins {
 }
 
 dependencies {
-	implementation project(':bank-chassis')
+	implementation project(':bank-chassis-client')
+	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation project(':bank-persistence-starter')
 
 	implementation 'org.springframework.boot:spring-boot-starter-kafka'

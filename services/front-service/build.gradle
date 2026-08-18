@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-	implementation project(':bank-chassis')
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation project(':bank-chassis-web')
+	implementation project(':bank-chassis-client')
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'

@@ -9,10 +9,11 @@ dependencyManagement {
 }
 
 dependencies {
-	api 'org.springframework.boot:spring-boot-starter'
-	api 'org.springframework.boot:spring-boot-jackson'
-	implementation 'org.springframework.boot:spring-boot-micrometer-tracing-brave'
-	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	api project(':bank-chassis')
+	api 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	api 'org.springframework.boot:spring-boot-restclient'
+	api 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+	implementation 'org.springframework.cloud:spring-cloud-commons'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

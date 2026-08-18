@@ -17,7 +17,8 @@ publishing {
 }
 
 dependencies {
-	implementation project(':bank-chassis')
+	implementation project(':bank-chassis-web')
+	implementation project(':bank-chassis-client')
 	implementation project(':bank-persistence-starter')
 	implementation project(':bank-notifications-outbox-starter')
 
