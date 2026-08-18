@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kafka
+description: Apache Kafka broker in KRaft mode
+type: application
+version: 1.0.0
+appVersion: "4.2.1"
+
+dependencies:
+  - name: bank-common
+    version: 1.0.0
+    repository: "file://../bank-common"

@@ -30,3 +30,4 @@ build/
 
 ### Helm ###
 deploy/helm/*/charts/*.tgz
+deploy/helm/*/Chart.lock
