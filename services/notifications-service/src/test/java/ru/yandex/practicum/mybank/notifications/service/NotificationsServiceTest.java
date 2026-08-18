@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -68,14 +69,14 @@ class NotificationsServiceTest {
 	}
 
 	@Test
-	void acceptsDuplicateSilently() {
-		when(accountsClient.getCustomer(RECIPIENT_UUID))
-				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
-		when(messageRenderer.render(any(), any())).thenReturn(MESSAGE);
-		when(notificationRepository.insertIfAbsent(any(), any(), any(), anyString(), anyString(), anyString()))
-				.thenReturn(Optional.empty());
+	void skipsEventAlreadyNotifiedAbout() {
+		when(notificationRepository.existsByEventUuid(EVENT_UUID)).thenReturn(true);
 
 		notificationsService.receive(EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload);
+
+		verifyNoInteractions(accountsClient, messageRenderer);
+		verify(notificationRepository, never()).insertIfAbsent(any(), any(), any(), anyString(), anyString(),
+				anyString());
 	}
 
 	@Test
@@ -87,7 +88,8 @@ class NotificationsServiceTest {
 				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
 				.isInstanceOf(CustomerResolutionException.class);
 
-		verifyNoInteractions(notificationRepository);
+		verify(notificationRepository, never()).insertIfAbsent(any(), any(), any(), anyString(), anyString(),
+				anyString());
 	}
 
 	private Notification notification() {

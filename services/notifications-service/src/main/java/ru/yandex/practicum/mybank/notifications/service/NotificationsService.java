@@ -30,17 +30,17 @@ public class NotificationsService {
 	}
 
 	public void receive(UUID eventUuid, EventType type, UUID recipientUuid, JsonNode payload) {
-		CustomerResponse recipient = accountsClient.getCustomer(recipientUuid);
-		String message = messageRenderer.render(type, payload);
-
-		Optional<Notification> inserted = notificationRepository.insertIfAbsent(
-				UUID.randomUUID(), eventUuid, recipientUuid, type.name(), payload.toString(), message);
-
-		if (inserted.isEmpty()) {
-			log.debug("Notification for event {} already accepted", eventUuid);
+		if (notificationRepository.existsByEventUuid(eventUuid)) {
+			log.debug("Notification for event {} already sent", eventUuid);
 			return;
 		}
 
+		CustomerResponse recipient = accountsClient.getCustomer(recipientUuid);
+		String message = messageRenderer.render(type, payload);
+
 		log.info("Notification to {} ({}): {}", recipient.login(), recipient.name(), message);
+
+		notificationRepository.insertIfAbsent(
+				UUID.randomUUID(), eventUuid, recipientUuid, type.name(), payload.toString(), message);
 	}
 }

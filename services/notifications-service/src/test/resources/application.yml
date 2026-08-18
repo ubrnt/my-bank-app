@@ -8,6 +8,19 @@ spring:
     name: notifications-service
   jackson:
     default-property-inclusion: non_null
+  kafka:
+    consumer:
+      group-id: notifications-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: ru.yandex.practicum.mybank.notifications.dto.NotificationRequest
+    listener:
+      ack-mode: RECORD
   security:
     oauth2:
       client:
@@ -23,6 +36,8 @@ spring:
             token-uri: http://localhost/realms/my-bank/protocol/openid-connect/token
 
 mybank:
+  notifications:
+    topic: notifications
   clients:
     base-urls:
       accounts-service: http://localhost:8082
