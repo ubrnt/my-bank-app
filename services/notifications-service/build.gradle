@@ -4,11 +4,12 @@ plugins {
 
 dependencies {
 	implementation project(':bank-chassis-client')
-	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation project(':bank-persistence-starter')
 
+	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-kafka'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-liquibase'
 
 	runtimeOnly 'org.postgresql:postgresql'
@@ -19,5 +20,6 @@ dependencies {
 	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+	testImplementation testFixtures(project(':bank-chassis'))
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

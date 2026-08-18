@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mybank.notifications.listener;
 
+import jakarta.validation.Valid;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.mybank.notifications.dto.NotificationEvent;
@@ -15,7 +16,7 @@ public class NotificationsListener {
 	}
 
 	@KafkaListener(topics = "${mybank.notifications.topic}")
-	public void receive(NotificationEvent event) {
+	public void receive(@Valid NotificationEvent event) {
 		notificationsService.receive(event.eventUuid(), event.type(), event.recipientUuid(), event.payload());
 	}
 }

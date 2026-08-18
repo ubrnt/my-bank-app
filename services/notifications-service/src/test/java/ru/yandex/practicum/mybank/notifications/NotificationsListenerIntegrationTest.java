@@ -97,6 +97,23 @@ class NotificationsListenerIntegrationTest {
 		assertThat(countOfNotificationsOf(brokenEventUuid)).isZero();
 	}
 
+	@Test
+	void skipsEventWithoutRequiredFieldsAndKeepsReading() {
+		UUID brokenEventUuid = UUID.randomUUID();
+		UUID validEventUuid = UUID.randomUUID();
+
+		send("""
+				{
+					"eventUuid": "%s",
+					"recipientUuid": "%s"
+				}""".formatted(brokenEventUuid, RECIPIENT_UUID));
+		send(depositEvent(validEventUuid));
+
+		awaitNotificationOf(validEventUuid);
+
+		assertThat(countOfNotificationsOf(brokenEventUuid)).isZero();
+	}
+
 	private String depositEvent(UUID eventUuid) {
 		return """
 				{
