@@ -10,6 +10,10 @@ service:
 
 storage: 2Gi
 
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
 heapOpts: "-Xms256m -Xmx512m"
 
 resources:
