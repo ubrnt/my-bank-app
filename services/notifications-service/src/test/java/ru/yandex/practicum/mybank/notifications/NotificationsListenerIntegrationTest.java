@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.test.context.EmbeddedKafka;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.yandex.practicum.mybank.notifications.client.AccountsClient;
@@ -41,9 +40,6 @@ class NotificationsListenerIntegrationTest {
 
 	@MockitoBean
 	private AccountsClient accountsClient;
-
-	@MockitoBean
-	private JwtDecoder jwtDecoder;
 
 	@BeforeEach
 	void stubRecipient() {
