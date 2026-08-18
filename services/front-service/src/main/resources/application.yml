@@ -2,7 +2,9 @@ spring:
   application:
     name: front-service
   config:
-    import: "classpath:bank-chassis-defaults.yml"
+    import:
+      - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-chassis-client-defaults.yml"
   http:
     clients:
       read-timeout: 25s

@@ -67,7 +67,21 @@ config:
               token-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/token
     kafka:
       bootstrap-servers: kafka-0.kafka-headless:9092
+      producer:
+        acks: all
+        key-serializer: org.apache.kafka.common.serialization.StringSerializer
+        value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+        properties:
+          enable.idempotence: true
+          spring.json.add.type.headers: false
+          delivery.timeout.ms: 8000
+          request.timeout.ms: 3000
+          max.block.ms: 3000
   mybank:
     clients:
       base-urls:
         accounts-service: http://accounts-service:8082
+    notifications:
+      topic: notifications
+      partitions: 3
+      replicas: 1

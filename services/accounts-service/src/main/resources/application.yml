@@ -4,6 +4,7 @@ spring:
   config:
     import:
       - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-chassis-web-defaults.yml"
       - "classpath:bank-persistence-defaults.yml"
   datasource:
     url: jdbc:postgresql://localhost:5432/my_bank_app
