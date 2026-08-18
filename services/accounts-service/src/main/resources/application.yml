@@ -22,6 +22,8 @@ spring:
           audiences: accounts-service
   kafka:
     bootstrap-servers: localhost:9092
+    admin:
+      fail-fast: true
     producer:
       acks: all
       key-serializer: org.apache.kafka.common.serialization.StringSerializer

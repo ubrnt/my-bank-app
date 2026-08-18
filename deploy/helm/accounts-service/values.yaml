@@ -63,11 +63,5 @@ config:
           jwt:
             issuer-uri: http://localhost:8180/realms/my-bank
             jwk-set-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/certs
-        client:
-          provider:
-            keycloak:
-              token-uri: http://host.minikube.internal:8180/realms/my-bank/protocol/openid-connect/token
-  mybank:
-    clients:
-      base-urls:
-        notifications-service: http://notifications-service:8083
+    kafka:
+      bootstrap-servers: kafka-0.kafka-headless:9092

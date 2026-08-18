@@ -1,3 +1,6 @@
+kafka:
+  enabled: true
+
 accounts-service:
   enabled: true
 
