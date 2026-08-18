@@ -44,7 +44,6 @@ existingSecret: ""
 
 secrets:
   ACCOUNTS_DB_PASSWORD: ""
-  ACCOUNTS_SERVICE_SECRET: accounts-service-secret
 
 database:
   image: postgres:17-alpine
