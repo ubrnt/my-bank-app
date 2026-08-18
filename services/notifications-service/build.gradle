@@ -20,6 +20,6 @@ dependencies {
 	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
-	testImplementation testFixtures(project(':bank-chassis'))
+	testImplementation project(':bank-contract-kafka')
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
