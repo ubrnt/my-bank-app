@@ -18,7 +18,7 @@ spring:
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
         spring.json.use.type.headers: false
-        spring.json.value.default.type: ru.yandex.practicum.mybank.notifications.dto.NotificationRequest
+        spring.json.value.default.type: ru.yandex.practicum.mybank.notifications.dto.NotificationEvent
     listener:
       ack-mode: RECORD
   security:
