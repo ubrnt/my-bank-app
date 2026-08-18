@@ -197,28 +197,6 @@
       ]
     },
     {
-      "name": "notifications:write",
-      "description": "Send notifications",
-      "protocol": "openid-connect",
-      "attributes": {
-        "include.in.token.scope": "true",
-        "display.on.consent.screen": "false"
-      },
-      "protocolMappers": [
-        {
-          "name": "notifications-service-audience",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-audience-mapper",
-          "consentRequired": false,
-          "config": {
-            "included.client.audience": "notifications-service",
-            "introspection.token.claim": "true",
-            "access.token.claim": "true"
-          }
-        }
-      ]
-    },
-    {
       "name": "customer:any:read",
       "description": "Read any customer by uuid",
       "protocol": "openid-connect",
@@ -248,16 +226,15 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "accounts-service-secret",
       "redirectUris": [],
       "webOrigins": [],
       "notBefore": 0,
-      "bearerOnly": false,
+      "bearerOnly": true,
       "consentRequired": false,
       "standardFlowEnabled": false,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": true,
+      "serviceAccountsEnabled": false,
       "publicClient": false,
       "frontchannelLogout": false,
       "protocol": "openid-connect",
@@ -272,9 +249,7 @@
         "basic",
         "profile"
       ],
-      "optionalClientScopes": [
-        "notifications:write"
-      ]
+      "optionalClientScopes": []
     },
     {
       "clientId": "notifications-service",
@@ -341,8 +316,7 @@
         "profile"
       ],
       "optionalClientScopes": [
-        "transactions:write",
-        "notifications:write"
+        "transactions:write"
       ]
     },
     {
@@ -376,8 +350,7 @@
         "profile"
       ],
       "optionalClientScopes": [
-        "transactions:write",
-        "notifications:write"
+        "transactions:write"
       ]
     },
     {
