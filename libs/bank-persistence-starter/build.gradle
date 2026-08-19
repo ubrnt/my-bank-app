@@ -10,4 +10,5 @@ dependencyManagement {
 
 dependencies {
 	api 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'net.ttddyy.observation:datasource-micrometer-spring-boot:2.2.1'
 }
