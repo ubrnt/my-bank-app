@@ -1,0 +1,11 @@
+apiVersion: v2
+name: zipkin
+description: Zipkin distributed tracing backend
+type: application
+version: 1.0.0
+appVersion: "3.6"
+
+dependencies:
+  - name: bank-common
+    version: 1.0.0
+    repository: "file://../bank-common"

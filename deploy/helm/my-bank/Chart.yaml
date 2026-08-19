@@ -10,6 +10,10 @@ dependencies:
     version: 1.0.0
     repository: "file://../kafka"
     condition: kafka.enabled
+  - name: zipkin
+    version: 1.0.0
+    repository: "file://../zipkin"
+    condition: zipkin.enabled
   - name: accounts-service
     version: 1.0.0
     repository: "file://../accounts-service"

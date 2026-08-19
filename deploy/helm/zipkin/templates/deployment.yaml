@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bank-common.name" . }}
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "bank-common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "bank-common.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: zipkin
+          image: {{ .Values.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: JAVA_OPTS
+              value: {{ .Values.javaOpts | quote }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
