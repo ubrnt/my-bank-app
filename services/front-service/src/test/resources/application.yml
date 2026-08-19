@@ -31,7 +31,6 @@ mybank:
       gateway: http://localhost:8081
 
 management:
-  zipkin:
-    tracing:
-      export:
-        enabled: false
+  tracing:
+    export:
+      enabled: false

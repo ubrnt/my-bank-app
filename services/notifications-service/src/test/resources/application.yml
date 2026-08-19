@@ -43,7 +43,6 @@ mybank:
       accounts-service: http://localhost:8082
 
 management:
-  zipkin:
-    tracing:
-      export:
-        enabled: false
+  tracing:
+    export:
+      enabled: false

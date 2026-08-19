@@ -41,7 +41,6 @@ mybank:
       max-attempts: 5
 
 management:
-  zipkin:
-    tracing:
-      export:
-        enabled: false
+  tracing:
+    export:
+      enabled: false

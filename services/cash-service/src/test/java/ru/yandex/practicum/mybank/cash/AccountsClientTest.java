@@ -25,7 +25,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest(properties = "mybank.accounts.retry.delay=1ms")
+@SpringBootTest(properties = { "mybank.accounts.retry.delay=1ms", "management.tracing.export.enabled=true" })
 @Import({PostgresContainerConfig.class, FakeTokenConfig.class})
 class AccountsClientTest {
 
