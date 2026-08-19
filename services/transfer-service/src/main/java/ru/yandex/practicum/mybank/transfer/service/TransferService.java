@@ -22,10 +22,13 @@ public class TransferService {
 
 	private final AccountsClient accountsClient;
 	private final TransferOperationJournal journal;
+	private final TransferMetrics metrics;
 
-	public TransferService(AccountsClient accountsClient, TransferOperationJournal journal) {
+	public TransferService(AccountsClient accountsClient, TransferOperationJournal journal,
+			TransferMetrics metrics) {
 		this.accountsClient = accountsClient;
 		this.journal = journal;
+		this.metrics = metrics;
 	}
 
 	public TransferOperationDto transfer(UUID idempotencyKey, String fromLogin, String toLogin, long amount) {
@@ -42,11 +45,11 @@ public class TransferService {
 			transaction = accountsClient.transfer(
 					new TransactionRequest(operation.getUuid(), fromLogin, toLogin, amount));
 		} catch (TransactionRejectedException e) {
-			fail(operation, e.getCode());
+			fail(operation, fromLogin, toLogin, e.getCode());
 
 			throw e;
 		} catch (ServiceCallException e) {
-			fail(operation, AccountsServiceUnavailableException.CODE);
+			fail(operation, fromLogin, toLogin, AccountsServiceUnavailableException.CODE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}
@@ -60,7 +63,9 @@ public class TransferService {
 		}
 	}
 
-	private void fail(TransferOperation operation, String failureReason) {
+	private void fail(TransferOperation operation, String fromLogin, String toLogin, String failureReason) {
+		metrics.transferFailed(fromLogin, toLogin, failureReason);
+
 		try {
 			journal.fail(operation, failureReason);
 		} catch (ObjectOptimisticLockingFailureException e) {
