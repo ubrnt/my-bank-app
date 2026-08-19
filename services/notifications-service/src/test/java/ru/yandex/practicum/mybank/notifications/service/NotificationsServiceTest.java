@@ -2,12 +2,15 @@ package ru.yandex.practicum.mybank.notifications.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.mybank.notifications.client.AccountsClient;
 import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
+import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.client.dto.CustomerResponse;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.domain.Notification;
@@ -48,6 +51,11 @@ class NotificationsServiceTest {
 
 	@Mock
 	private AccountsClient accountsClient;
+
+	private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+
+	@Spy
+	private NotificationsMetrics metrics = new NotificationsMetrics(meterRegistry);
 
 	@InjectMocks
 	private NotificationsService notificationsService;
@@ -90,6 +98,40 @@ class NotificationsServiceTest {
 
 		verify(notificationRepository, never()).insertIfAbsent(any(), any(), any(), anyString(), anyString(),
 				anyString());
+		assertThat(meterRegistry.find(NotificationsMetrics.DELIVERY_FAILURES).counter()).isNull();
+	}
+
+	@Test
+	void countsDeliveryToUnknownRecipient() {
+		when(accountsClient.getCustomer(RECIPIENT_UUID))
+				.thenThrow(new UnknownRecipientException(RECIPIENT_UUID, new RuntimeException("404")));
+
+		assertThatThrownBy(() -> notificationsService.receive(
+				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
+				.isInstanceOf(UnknownRecipientException.class);
+
+		assertThat(deliveryFailures(NotificationsMetrics.UNKNOWN_LOGIN, "unknown_recipient")).isEqualTo(1.0);
+	}
+
+	@Test
+	void countsUndeliverableEventByRecipientLogin() {
+		when(accountsClient.getCustomer(RECIPIENT_UUID))
+				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
+		when(messageRenderer.render(EventType.MONEY_DEPOSITED, payload))
+				.thenThrow(new InvalidEventException("Event payload lacks field 'amount'"));
+
+		assertThatThrownBy(() -> notificationsService.receive(
+				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
+				.isInstanceOf(InvalidEventException.class);
+
+		assertThat(deliveryFailures("user1", "invalid_event")).isEqualTo(1.0);
+	}
+
+	private double deliveryFailures(String login, String reason) {
+		return meterRegistry.get(NotificationsMetrics.DELIVERY_FAILURES)
+				.tags("login", login, "reason", reason)
+				.counter()
+				.count();
 	}
 
 	private Notification notification() {
