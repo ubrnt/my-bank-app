@@ -1,6 +1,9 @@
 kafka:
   enabled: true
 
+zipkin:
+  enabled: true
+
 accounts-service:
   enabled: true
 
