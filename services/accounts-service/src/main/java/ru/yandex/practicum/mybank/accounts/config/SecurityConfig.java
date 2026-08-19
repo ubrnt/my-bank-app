@@ -19,12 +19,14 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, WebEndpointProperties endpoints) throws Exception {
 		String healthPath = endpoints.getBasePath() + "/health/**";
+		String prometheusPath = endpoints.getBasePath() + "/prometheus";
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(requests -> requests
 						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers(HttpMethod.GET, healthPath).permitAll()
+						.requestMatchers(HttpMethod.GET, prometheusPath).permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/customers/others").hasAuthority("SCOPE_customer:others:read")
 						.requestMatchers(HttpMethod.GET, "/api/customers/me").hasAuthority("SCOPE_customer:read")
 						.requestMatchers(HttpMethod.PUT, "/api/customers/me").hasAuthority("SCOPE_customer:write")

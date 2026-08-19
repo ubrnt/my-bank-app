@@ -3,6 +3,10 @@ spring:
     default-property-inclusion: non_null
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
   observations:
     enable:
       spring.security: false
