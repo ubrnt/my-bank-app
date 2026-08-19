@@ -9,13 +9,14 @@ Kubernetes with Helm.
 - **`transfer-service`**: runs transfers between customers.
 - **`notifications-service`**: takes events about money and profile changes, then delivers them.
 
-Four backend services and their databases live in Kubernetes. They find each other by Service DNS
-and read environment specific settings from ConfigMaps and Secrets. UI reaches them through an
-Ingress, single entry point into cluster. Every call is authorized with an OAuth2 token from
-Keycloak, which runs outside cluster next to UI. Each service that keeps data owns a private
-PostgreSQL instance, deployed as a StatefulSet. Services call each other over REST. One
-asynchronous path is notifications: sender writes an event to a transactional outbox and a relay
-ships it.
+Four backend services with their databases and one Kafka broker live in Kubernetes. They find each
+other by Service DNS and read environment specific settings from ConfigMaps and Secrets. UI reaches
+them through an Ingress, single entry point into cluster. Every call is authorized with an OAuth2
+token from Keycloak, which runs outside cluster next to UI. Each service that keeps data owns a
+private PostgreSQL instance, deployed as a StatefulSet. Services call each other over REST, with one
+exception: notifications never arrive that way. A sender writes an event to a transactional outbox
+and a relay publishes it to Apache Kafka, which runs in the cluster as its own StatefulSet;
+`notifications-service` reads the topic and has no HTTP API at all.
 
 ## Contents
 
@@ -30,6 +31,7 @@ ships it.
 - [Security](#security)
 - [Resilience](#resilience)
 - [Idempotency](#idempotency)
+- [Notifications over Kafka](#notifications-over-kafka)
 - [Storage](#storage)
 - [Left out on purpose](#left-out-on-purpose)
 
@@ -39,12 +41,13 @@ ships it.
 - Spring MVC in every service
 - Spring Security (OAuth2 login, OAuth2 client, OAuth2 resource server)
 - Keycloak 26: Authorization Code Flow for users, Client Credentials Flow for services
+- Apache Kafka 4.2 in KRaft mode, Spring for Apache Kafka
 - Kubernetes (minikube), Helm 3 compatible charts, ingress-nginx
 - Spring Data JPA, PostgreSQL 17, Liquibase migrations
 - Resilience4j (circuit breakers, time limiters), Spring Framework 7 `@Retryable`
 - Thymeleaf for the UI
 - Gradle multiproject
-- JUnit 5, Mockito, Testcontainers, WireMock, Spring Cloud Contract
+- JUnit 5, Mockito, Testcontainers, WireMock, `spring-kafka-test`, Spring Cloud Contract
 
 ## Layout
 
@@ -58,9 +61,12 @@ services/            one folder per service, each with its own Dockerfile
   notifications-service/
   front-service/
 libs/                shared libraries, published as plain Gradle projects
-  bank-chassis/
+  bank-chassis/                      batch worker, JSON, logging and tracing defaults
+  bank-chassis-web/                  serving HTTP: error handling, request log, login from JWT
+  bank-chassis-client/               calling HTTP: client factory, breaker, client credentials
   bank-persistence-starter/
   bank-notifications-outbox-starter/
+  bank-contract-kafka/               test only: Kafka side of Spring Cloud Contract messaging
 deploy/              everything about deployment
   build-images.sh          builds four service images inside the cluster
   helm/
@@ -69,28 +75,30 @@ deploy/              everything about deployment
     cash-service/
     transfer-service/
     notifications-service/
-    my-bank/               umbrella chart: four services, ingress and smoke test
+    kafka/                 broker chart: StatefulSet in KRaft mode, services, volume
+    my-bank/               umbrella chart: four services, broker, ingress and smoke test
     build-deps.sh          adds bank-common into the charts that need it
 infra/               what app needs to run, kept outside Kubernetes
-  docker-compose.yml       Keycloak, and PostgreSQL under the local-db profile
+  docker-compose.yml       Keycloak, and PostgreSQL with Kafka under the local profile
   keycloak/                realm export with clients, scopes and users
   postgres/init/           schema and role creation for the local database
 docker-compose.yml   the UI, includes infra/docker-compose.yml
 ```
 
-A service folder holds `src/main`, `src/test` and, for the four services that publish contracts,
+A service folder holds `src/main`, `src/test` and, for the three services that publish contracts,
 `src/contractTest`. Settings that do not depend on the environment live in the service itself, in
-`application.yml`. Shared defaults come from two files in the libraries,
-`bank-chassis-defaults.yml` and `bank-persistence-defaults.yml`, which every service imports.
-Addresses, log levels and passwords come from the chart, see
+`application.yml`. Shared defaults come from the libraries, and a service imports only the ones it
+needs: `bank-chassis-defaults.yml` everywhere, `bank-chassis-web-defaults.yml` where HTTP is served,
+`bank-chassis-client-defaults.yml` where HTTP is called, `bank-persistence-defaults.yml` where there
+is a database. Addresses, log levels and passwords come from the chart, see
 [Configuration](#configuration).
 
 ## Architecture
 
 A request from the browser goes to the UI, from the UI through the ingress, and stops at accounts,
-the only service that touches money. Notification events are stored in outbox tables and a relay
-ships them. Storage is private: a service that keeps data has its own database and nobody else
-reads it.
+the only service that touches money. Notification events are stored in outbox tables, and a relay
+publishes them to one Kafka topic that `notifications-service` consumes. Storage is private: a
+service that keeps data has its own database and nobody else reads it.
 
 ```mermaid
 flowchart TD
@@ -104,9 +112,10 @@ flowchart TD
         ingress -->|"/api/transfers/**"| transfer["transfer-service :8085"]
         cash --> accounts
         transfer --> accounts
-        cash --> notifications["notifications-service :8083"]
-        accounts --> notifications
-        transfer --> notifications
+        cash -->|"event"| kafka[("Kafka")]
+        accounts -->|"event"| kafka
+        transfer -->|"event"| kafka
+        kafka --> notifications["notifications-service :8083"]
         notifications -->|"recipient lookup"| accounts
     end
 
@@ -114,13 +123,15 @@ flowchart TD
     classDef service fill:#dbeafe,stroke:#3b82f6,color:#1f2937
     classDef auth fill:#ede9fe,stroke:#7c3aed,color:#1f2937
     classDef entry fill:#dcfce7,stroke:#16a34a,color:#1f2937
+    classDef broker fill:#fee2e2,stroke:#dc2626,color:#1f2937
     class browser client
     class front,cash,transfer,accounts,notifications service
+    class kafka broker
     class keycloak auth
     class ingress entry
 ```
 
-UI and Keycloak run outside cluster, four services with their databases inside.
+UI and Keycloak run outside cluster, four services with their databases and the broker inside.
 
 Databases are left off the diagram to keep it easy to read. See [Storage](#storage) for schemas and
 their tables.
@@ -131,18 +142,22 @@ their tables.
 | Keycloak | 8180 | outside | OAuth2 authorization server, realm `my-bank` |
 | Ingress | 8081 | cluster | Single entry point, routes by path, replaces the API gateway |
 | `accounts-service` | 8082 | cluster | Customers, accounts, transactions. Only place where money moves |
-| `notifications-service` | 8083 | cluster | Accepts events, looks up the recipient, renders and delivers |
+| `notifications-service` | 8083 | cluster | Reads events from Kafka, looks up the recipient, renders and delivers. No HTTP API |
 | `cash-service` | 8084 | cluster | Deposit and withdraw flow, plus its journal |
 | `transfer-service` | 8085 | cluster | Transfer flow, plus its journal |
 | PostgreSQL | 5432 | cluster | One StatefulSet per service that keeps data |
+| Kafka | 9092 | cluster | One broker in KRaft mode, topic `notifications`, own volume |
 
-Three shared libraries live in `libs/`:
+Six shared libraries live in `libs/`:
 
 | Library | What it gives |
 |---------|---------------|
 | `bank-persistence-starter` | `BaseEntity` (id, uuid, timestamps, version), JPA auditing |
-| `bank-chassis` | Error response and base exception handler, service client factory (address from config, tokens, circuit breaker), batch worker skeleton, shared Spring defaults |
-| `bank-notifications-outbox-starter` | Outbox table, save API, relay that ships events to notifications |
+| `bank-chassis` | Batch worker skeleton, shared defaults for JSON, logging and tracing |
+| `bank-chassis-web` | Error response, base exception handler, request logging filter, login taken from JWT |
+| `bank-chassis-client` | Service client factory: address from config, client credentials token, circuit breaker |
+| `bank-notifications-outbox-starter` | Outbox table, save API, relay that publishes events to the Kafka topic |
+| `bank-contract-kafka` | Test only: sends and receives contract messages over Kafka, see [Test](#test) |
 
 ## Build
 
@@ -166,14 +181,14 @@ Contract stubs go to the local Maven repository, where consumer tests pick them 
 
 ## Run
 
-App runs in two halves: four backend services with their databases in Kubernetes, UI and Keycloak
-beside them in Docker Compose.
+App runs in two halves: four backend services with their databases and a Kafka broker in
+Kubernetes, UI and Keycloak beside them in Docker Compose.
 
 ### What you need
 
 - Docker (Docker Desktop, colima or similar)
 - `minikube`, `kubectl`, `helm`
-- about 4 GiB of memory for cluster
+- about 6 GiB of memory and 5 CPUs for cluster.
 
 ### Start cluster
 
@@ -181,7 +196,7 @@ Port 8081 on your machine is published to port 80 of node, and that is how UI re
 can only be set at creation time.
 
 ```bash
-minikube start --driver=docker --cpus=4 --memory=4g --ports=8081:80
+minikube start --driver=docker --cpus=5 --memory=6g --ports=8081:80
 minikube addons enable ingress
 ```
 
@@ -304,13 +319,14 @@ One service also runs from Gradle against a local database. Defaults in `applica
 `localhost`, so nothing needs setting:
 
 ```bash
-docker compose --profile local-db up -d      # PostgreSQL and Keycloak
+docker compose --profile local up -d         # PostgreSQL, Kafka and Keycloak
 ./gradlew :accounts-service:bootRun
 ```
 
-Keycloak always comes up with Compose, PostgreSQL only under the `local-db` profile: in cluster each
-service has a database of its own, so a local one is there for Gradle runs and nothing else. Schemas
-and roles in it are created by `infra/postgres/init/`.
+Keycloak always comes up with Compose, PostgreSQL and Kafka only under the `local` profile: in
+cluster each service has a database of its own and the broker runs there too, so local ones are
+there for Gradle runs and nothing else. Schemas and roles in the database are created by
+`infra/postgres/init/`, and the broker keeps its log in the `kafka-data` volume.
 
 ### Logs
 
@@ -328,20 +344,14 @@ so one operation can be followed across every service it touches. Pod names are 
 [cash-service]     2026-08-13T22:14:41.690Z  INFO [6a7e41d13aebe15c7e21f8fafae65db7,7e21f8fafae65db7] r.y.p.m.c.web.RequestLoggingFilter   : handled POST /api/cash/deposit 200 in 68 ms
 ```
 
-Delivery of a notification runs on its own, under its own traceId, because a relay picks the event
-up later. Here transfer-service ships two events, notifications asks accounts who the recipient is,
-and a message is rendered for each side of a transfer:
+Delivery of a notification leaves the traceId behind, because the event travels through Kafka: the
+relay publishes it, and the consumer picks it up in its own thread later. Here cash-service ships an
+event, notifications reads it, asks accounts who the recipient is, and renders the message:
 
 ```
-[transfer-service]      2026-08-13T22:12:03.621Z DEBUG [6a7e413378f710a9278ddcd3554200e8,278ddcd3554200e8] r.y.p.m.chassis.worker.BatchProcessor : Processing 2 items
-[transfer-service]      2026-08-13T22:12:03.625Z DEBUG [6a7e413378f710a9278ddcd3554200e8,d80c8ecd3511ca6c] r.y.p.m.c.c.ClientLoggingInterceptor  : calling notifications-service POST /api/notifications
-[notifications-service] 2026-08-13T22:12:03.657Z  INFO [6a7e413378f710a9278ddcd3554200e8,4e920fc1fd21fbe3] r.y.p.m.c.web.RequestLoggingFilter    : received POST /api/notifications
-[notifications-service] 2026-08-13T22:12:03.668Z DEBUG [6a7e413378f710a9278ddcd3554200e8,67ce2b218477ec7e] r.y.p.m.c.c.ClientLoggingInterceptor  : calling accounts-service GET /api/customers/265c5ada-06b2-46ce-b017-2650b0b24dc9
-[accounts-service]      2026-08-13T22:12:03.686Z  INFO [6a7e413378f710a9278ddcd3554200e8,04461b6d4940ccb5] r.y.p.m.c.web.RequestLoggingFilter    : received GET /api/customers/265c5ada-06b2-46ce-b017-2650b0b24dc9
-[accounts-service]      2026-08-13T22:12:03.694Z  INFO [6a7e413378f710a9278ddcd3554200e8,04461b6d4940ccb5] r.y.p.m.c.web.RequestLoggingFilter    : handled GET /api/customers/265c5ada-06b2-46ce-b017-2650b0b24dc9 200 in 8 ms
-[notifications-service] 2026-08-13T22:12:03.702Z  INFO [6a7e413378f710a9278ddcd3554200e8,56ac5fde36d85d54] r.y.p.m.n.service.NotificationsService : Notification to user3 (Сидоров Сидор): Счёт *0003: поступление 5 000 со счёта *0001. Доступно 106 000
-[notifications-service] 2026-08-13T22:12:03.755Z  INFO [6a7e413378f710a9278ddcd3554200e8,ad4d5102cfdbc661] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Иван1): Счёт *0001: перевод 5 000 на счёт *0003. Доступно 105 000
-[transfer-service]      2026-08-13T22:12:03.758Z DEBUG [6a7e413378f710a9278ddcd3554200e8,b085cd50bf5ffe2a] r.y.p.m.c.c.ClientLoggingInterceptor  : finished notifications-service POST /api/notifications 200 OK in 35 ms
+[cash-service]          2026-08-18T05:00:13.108Z DEBUG [6a7e413378f710a9278ddcd3554200e8,278ddcd3554200e8] r.y.p.m.chassis.worker.BatchProcessor : Processing 1 items
+[notifications-service] 2026-08-18T05:00:14.665Z  INFO [,] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Игорь): Счёт *0001: снятие 300. Доступно 105 500
+[notifications-service] 2026-08-18T05:00:15.146Z  INFO [,] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Игорь): Данные профиля обновлены. Если это были не вы, обратитесь в банк
 ```
 
 #### Cluster
@@ -377,9 +387,9 @@ artifact.
 
 | Layer | Holds | Lives in |
 |-------|-------|----------|
-| `application.yml` of service | port, schema, scopes, breaker instances, database user | service itself |
-| `bank-chassis-defaults.yml`, `bank-persistence-defaults.yml` | shared defaults: JSON, client timeouts, breaker and time limiter configs, logging pattern, Keycloak addresses for local run, JPA settings | libraries, imported by every service |
-| ConfigMap | database URL, addresses of other services, Keycloak addresses, log levels | `config` in chart values |
+| `application.yml` of service | port, schema, scopes, breaker instances, database user, Kafka defaults for local run | service itself |
+| `bank-chassis-defaults.yml` and its `-web` and `-client` companions, `bank-persistence-defaults.yml` | shared defaults: JSON, logging pattern, client timeouts, breaker and time limiter configs, Keycloak addresses for local run, JPA settings | libraries, imported by services that need them |
+| ConfigMap | database URL, addresses of other services, Kafka topic, producer and consumer settings, Keycloak addresses, log levels | `config` in chart values |
 | Secret | database password, client secret | `secrets` in chart values, or an existing secret |
 
 ConfigMap is mounted as a file and picked up with `SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/`,
@@ -408,9 +418,19 @@ authentication with `spring-security-test` and stub the services they call.
   against a real database. Journal transitions, outbox rows, repeats with the same key, expired
   claims and duplicate rejection.
 - **Client behaviour**: retries against WireMock (`AccountsClientTest`).
-- **Contracts** (Spring Cloud Contract): `accounts-service`, `notifications-service`,
-  `cash-service` and `transfer-service` publish producer contracts. Their consumers check requests
-  against the generated stubs with Stub Runner.
+- **Kafka** (`@EmbeddedKafka`): the relay publishes an event and fails when the broker is
+  unreachable; an operation in `accounts`, `cash` and `transfer` puts the expected message into the
+  topic; `notifications-service` stores what it reads, ignores a repeated `event_uuid` and skips a
+  broken event without getting stuck.
+- **Contracts** (Spring Cloud Contract): `accounts-service`, `cash-service` and `transfer-service`
+  publish producer contracts. Their consumers check requests against the generated stubs with Stub
+  Runner. `notifications-service` publishes none any more: it has no API to describe.
+- **Message contracts**: every event a service publishes is described by a contract of its own. The
+  producer test triggers a real publish and matches what lands in the topic;
+  `notifications-service` asks Stub Runner to fire those same contracts by label and then checks
+  that the notifications were stored. Spring Cloud Contract ships no Kafka middleware, only
+  the interfaces for one, so both sides share `KafkaMessageVerifier` from `bank-contract-kafka`.
+  That library is never a runtime dependency: services take it in test configurations only.
 
 ### Charts
 
@@ -432,9 +452,10 @@ helm test my-bank -n my-bank-dev --kube-context minikube
 ```
 
 Every service chart brings a test pod that asks its own service for `/actuator/health` and expects
-`UP`. One call proves a lot: Service resolves by name, its selector matches pods, pod passed
-readiness, health needs no token, and database answers, since data source health is part of that
-answer.
+`UP`. The broker chart brings its own: a pod that creates a temporary topic, describes it and
+deletes it, which proves the controller works and not only that the port answers. One call proves a
+lot: Service resolves by name, its selector matches pods, pod passed readiness, health needs no
+token, and database answers, since data source health is part of that answer.
 
 Umbrella chart adds a smoke test that runs after them and goes through ingress. Request without a
 token must get 401, request with a made up token must get 401 as well, not 500. Together that shows
@@ -503,9 +524,12 @@ Service to service paths are not published: they are meant for service tokens on
 
 ### `notifications-service`
 
-| Method | URL | Scope | Responses |
-|--------|-----|-------|-----------|
-| POST | `/api/notifications` | `notifications:write` | `200`, `400` bad payload |
+No HTTP API: no controllers and no resource server, the only way in is the Kafka topic, see
+[Notifications over Kafka](#notifications-over-kafka). The service does not take `bank-chassis-web`
+either, so no MVC code of ours is left in it. What stayed on purpose, although the task asks to drop
+Spring Web MVC, is `spring-boot-starter-web` itself, declared in the service directly: without a web
+application actuator serves nothing, and the pod would lose its readiness and liveness probes. The
+security chain allows `/actuator/health` and denies everything else.
 
 ## Security
 
@@ -527,8 +551,10 @@ Preloaded users:
 ### Services (service to service)
 
 Every call between services carries a Bearer JWT taken with the Client Credentials Flow. Each
-service is a resource server and checks a scope per endpoint. No token or a bad one gives `401`,
-a missing scope gives `403`.
+service with an API is a resource server and checks a scope per endpoint. `notifications-service` is
+not one any more: nobody calls it, it reads a topic. `accounts-service` no longer asks for a token
+of its own either, so its client is a plain resource server in the realm. No token or a bad one
+gives `401`, a missing scope gives `403`.
 
 | Caller | Callee | Scopes |
 |--------|--------|--------|
@@ -536,7 +562,6 @@ a missing scope gives `403`.
 | `front-service` | cash | `cash:write` |
 | `front-service` | transfer | `transfer:write` |
 | `cash-service`, `transfer-service` | accounts | `transactions:write` |
-| `cash-service`, `transfer-service`, `accounts-service` | notifications | `notifications:write` |
 | `notifications-service` | accounts | `customer:any:read` |
 
 Client secrets and database passwords reach a pod as environment variables from a Secret. The
@@ -552,7 +577,7 @@ counts as a failure, whether the call is retried, and the timeouts it runs under
 |------|---------------------------|---------|------------------------|
 | `front-service` → ingress | no response | none | connect 2s, read 25s, limit 30s |
 | `cash-service`, `transfer-service` → `accounts-service` | no response, or 5xx | 2 attempts, 200ms apart | connect 2s, read 5s, limit 10s |
-| `accounts`, `cash`, `transfer` → `notifications-service` | no response, or 5xx | next relay pass | connect 2s, read 5s, limit 10s |
+| `accounts`, `cash`, `transfer` → Kafka | not a breaker case | next relay pass, backoff doubles to `max-retry-delay` | publish waits 10s, producer gives up after 8s |
 | `notifications-service` → `accounts-service` | no response, or 5xx | none | connect 2s, read 5s, limit 10s |
 
 All breakers share the same thresholds: a window of 10 calls, evaluated once 5 of them are in, open
@@ -585,6 +610,48 @@ it. A row is taken over only when the repeat carries the same details and the ro
 is still pending past that timeout. Anything else under a key that is already taken answers
 `409 idempotency_key_conflict`, and the UI hands out a fresh key so the changed operation can be
 sent as its own request.
+
+## Notifications over Kafka
+
+Money and profile events reach `notifications-service` only through Kafka. One topic carries them
+all.
+
+| Setting | Value |
+|---------|-------|
+| Topic | `notifications`, 3 partitions, replication factor 1, created by a `NewTopic` bean, auto creation on the broker is off |
+| Message key | `recipientUuid` |
+| Value | JSON, `JacksonJsonSerializer` and `JacksonJsonDeserializer` (Jackson 3), type headers off |
+| Producer | `acks=all`, idempotent, `delivery.timeout.ms` 8s |
+| Consumer | group `notifications-service`, `enable-auto-commit=false`, ack after handling, `auto-offset-reset=earliest`, concurrency 3 |
+
+Delivery is at least once. The event is written into the outbox in the same transaction as the
+money, the relay marks the row processed only after the broker confirms the write, and the consumer
+moves its offset only after the notification is stored. Duplicates are therefore possible and are
+dropped by `event_uuid`, unique in the `notifications` table.
+
+A broken event is not retried: it is logged and skipped, because retrying it would block its
+partition. Two things count as broken here: an event without one of the required fields, caught by
+bean validation on the listener argument, and an event whose payload lacks a field the message
+needs.
+
+When accounts-service is down the recipient cannot be resolved and handling fails. That failure is
+retried with a growing back off, and the offset stays where it was, so nothing is lost and the event
+is handled as soon as accounts answers. The partition waits meanwhile, and every event behind it
+waits too, while the other partitions keep going.
+
+The event carries no profile data of its own. The login and the name of the recipient are asked from
+`accounts-service` at the moment the message is rendered, and that is deliberate: a copy of the
+profile in every event would widen the contract and go stale the day a customer renames themselves,
+while the lookup is one cheap call made only when a name is really needed.
+
+Consumer position is visible from the broker pod: `LAG` at zero means everything published so far is
+handled, and `CURRENT-OFFSET` is where a restart continues from.
+
+```bash
+kubectl --context=minikube -n my-bank-dev exec kafka-0 -- \
+  /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group notifications-service
+```
 
 ## Storage
 
@@ -705,11 +772,11 @@ erDiagram
 
 ### `notifications_outbox`
 
-The same table in three schemas, created by `bank-notifications-outbox-starter`. A row is written
-in the same transaction as the operation it describes. A relay picks up `PENDING` rows, sends them
-to `notifications-service` and marks them `PROCESSED`. Rows stuck in `PROCESSING` past
-`stale-timeout` are taken again, and a row that fails `max-attempts` times becomes `FAILED`.
-A failed delivery is put off to `next_attempt_at`, doubling the delay every time up to
+The same table in three schemas, created by `bank-notifications-outbox-starter`. A row is written in
+the same transaction as the operation it describes. A relay picks up `PENDING` rows, publishes them
+to the Kafka topic and marks them `PROCESSED` once the broker confirms the write. Rows stuck in
+`PROCESSING` past `stale-timeout` are taken again, and a row that fails `max-attempts` times becomes
+`FAILED`. A failed delivery is put off to `next_attempt_at`, doubling the delay every time up to
 `max-retry-delay`.
 
 ```mermaid
@@ -736,7 +803,9 @@ erDiagram
 
 ### `notifications`
 
-What was delivered. `event_uuid` is unique, so an event sent twice is stored once.
+What was delivered. `event_uuid` is unique, so an event read twice is stored once. The row is
+written after the notification is delivered, so a crash in between costs a repeated notification
+rather than a lost one.
 
 ```mermaid
 erDiagram
@@ -756,8 +825,8 @@ erDiagram
 
 ## Left out on purpose
 
-The list below is what was left out of scope on purpose, to make the sprint smaller and to deliver
-the core functionality first.
+One thing was left out of scope on purpose, to make the sprint smaller and to deliver the core
+functionality first.
 
 **No scanner to check journals for stuck rows.** A `cash-service` or `transfer-service` process can
 die for various reasons while waiting for an answer from accounts, which leaves rows in the
@@ -774,10 +843,3 @@ after reloading the page. What it would add is that the abandoned row stops lyin
 against the ledger instead of staying `PENDING` forever. It would also be useful for the failed
 transaction notifications that could follow. But those notifications were left out of scope for now
 as well.
-
-**Synchronous delivery in notifications-service.** Accepting a notification event resolves the
-recipient with a synchronous REST call to accounts-service and renders the message in the same
-thread, so accepting depends on accounts being up. However, there is retry logic on the sender
-side, so this is partially covered, and therefore async notifications were left out of scope for
-now. Moreover, there is no 'real' notification, it is just a logging event, so 'sending' one is not a
-time consuming operation.

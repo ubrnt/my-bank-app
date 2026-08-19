@@ -1,0 +1,16 @@
+plugins {
+	id 'java-library'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+	}
+}
+
+dependencies {
+	api 'org.apache.kafka:kafka-clients'
+	api 'org.springframework:spring-messaging'
+	api 'org.springframework:spring-context'
+	api 'org.springframework.cloud:spring-cloud-contract-verifier'
+}

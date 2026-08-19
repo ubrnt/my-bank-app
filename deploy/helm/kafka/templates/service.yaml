@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bank-common.name" . }}
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "bank-common.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: kafka
+      port: {{ .Values.service.port }}
+      targetPort: kafka
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bank-common.name" . }}-headless
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "bank-common.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: kafka
+      port: {{ .Values.service.port }}
+      targetPort: kafka
+      protocol: TCP
+    - name: controller
+      port: {{ .Values.service.controllerPort }}
+      targetPort: controller
+      protocol: TCP

@@ -16,8 +16,6 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.service.NotificationsService;
@@ -50,9 +48,6 @@ class AccountsContractIntegrationTest {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-
-	@MockitoBean
-	private JwtDecoder jwtDecoder;
 
 	@BeforeEach
 	void resetData() {

@@ -39,7 +39,8 @@ class NotificationsOutboxServiceTest {
 	@BeforeEach
 	void setUp() {
 		NotificationsOutboxProperties properties = new NotificationsOutboxProperties(
-				Duration.ofSeconds(5), 20, Duration.ofMinutes(5), MAX_ATTEMPTS, RETRY_DELAY, MAX_RETRY_DELAY);
+				Duration.ofSeconds(5), 20, Duration.ofMinutes(5), MAX_ATTEMPTS, RETRY_DELAY, MAX_RETRY_DELAY,
+				Duration.ofSeconds(10));
 
 		notificationsOutboxService = new NotificationsOutboxService(notificationsOutboxEventRepository, JsonMapper.builder().build(), properties);
 	}

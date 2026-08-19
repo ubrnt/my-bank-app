@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
+	boolean existsByEventUuid(UUID eventUuid);
+
 	@Query(value = """
 			insert into notifications (uuid, event_uuid, customer_uuid, type, payload, message,
 			                           created_ts, updated_ts, version)

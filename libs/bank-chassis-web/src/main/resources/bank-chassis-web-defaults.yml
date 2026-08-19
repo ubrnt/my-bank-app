@@ -1,0 +1,7 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8180/realms/my-bank
+          jwk-set-uri: http://localhost:8180/realms/my-bank/protocol/openid-connect/certs

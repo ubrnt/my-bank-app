@@ -12,6 +12,7 @@ public record NotificationsOutboxProperties(
 		@DefaultValue("5m") Duration staleTimeout,
 		@DefaultValue("6") int maxAttempts,
 		@DefaultValue("5s") Duration retryDelay,
-		@DefaultValue("1m") Duration maxRetryDelay
+		@DefaultValue("1m") Duration maxRetryDelay,
+		@DefaultValue("10s") Duration sendTimeout
 ) {
 }

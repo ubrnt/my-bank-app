@@ -4,6 +4,8 @@ spring:
   config:
     import:
       - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-chassis-web-defaults.yml"
+      - "classpath:bank-chassis-client-defaults.yml"
       - "classpath:bank-persistence-defaults.yml"
   datasource:
     url: jdbc:postgresql://localhost:5432/my_bank_app
@@ -28,12 +30,20 @@ spring:
             client-secret: ${TRANSFER_SERVICE_SECRET:transfer-service-secret}
             authorization-grant-type: client_credentials
             scope: transactions:write
-          notifications-service:
-            provider: keycloak
-            client-id: transfer-service
-            client-secret: ${TRANSFER_SERVICE_SECRET:transfer-service-secret}
-            authorization-grant-type: client_credentials
-            scope: notifications:write
+  kafka:
+    bootstrap-servers: localhost:9092
+    admin:
+      fail-fast: true
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        enable.idempotence: true
+        spring.json.add.type.headers: false
+        delivery.timeout.ms: 8000
+        request.timeout.ms: 3000
+        max.block.ms: 3000
 
 mybank:
   transfer:
@@ -41,14 +51,11 @@ mybank:
   clients:
     base-urls:
       accounts-service: http://localhost:8082
-      notifications-service: http://localhost:8083
 
 resilience4j:
   circuitbreaker:
     instances:
       accounts-service:
-        base-config: default
-      notifications-service:
         base-config: default
 
 server:

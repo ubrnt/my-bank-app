@@ -6,6 +6,9 @@ plugins {
 
 contracts {
 	baseClassForTests = 'ru.yandex.practicum.mybank.accounts.contracts.ContractsBase'
+	baseClassMappings {
+		baseClassMapping('.*notifications.*', 'ru.yandex.practicum.mybank.accounts.contracts.NotificationEventsBase')
+	}
 }
 
 publishing {
@@ -17,7 +20,7 @@ publishing {
 }
 
 dependencies {
-	implementation project(':bank-chassis')
+	implementation project(':bank-chassis-web')
 	implementation project(':bank-persistence-starter')
 	implementation project(':bank-notifications-outbox-starter')
 
@@ -34,7 +37,8 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:postgresql'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
-	testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-stub-runner'
+	contractTestImplementation project(':bank-contract-kafka')
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

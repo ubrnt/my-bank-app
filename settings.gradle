@@ -7,7 +7,10 @@ include 'transfer-service'
 include 'front-service'
 include 'bank-persistence-starter'
 include 'bank-chassis'
+include 'bank-chassis-web'
+include 'bank-chassis-client'
 include 'bank-notifications-outbox-starter'
+include 'bank-contract-kafka'
 
 project(':accounts-service').projectDir = file('services/accounts-service')
 project(':notifications-service').projectDir = file('services/notifications-service')
@@ -16,6 +19,9 @@ project(':transfer-service').projectDir = file('services/transfer-service')
 project(':front-service').projectDir = file('services/front-service')
 project(':bank-persistence-starter').projectDir = file('libs/bank-persistence-starter')
 project(':bank-chassis').projectDir = file('libs/bank-chassis')
+project(':bank-chassis-web').projectDir = file('libs/bank-chassis-web')
+project(':bank-chassis-client').projectDir = file('libs/bank-chassis-client')
 project(':bank-notifications-outbox-starter').projectDir = file('libs/bank-notifications-outbox-starter')
+project(':bank-contract-kafka').projectDir = file('libs/bank-contract-kafka')
 
 rootProject.children*.projectDir*.mkdirs()

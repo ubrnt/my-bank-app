@@ -1,3 +1,6 @@
+kafka:
+  storage: 10Gi
+
 accounts-service:
   replicaCount: 2
   existingSecret: my-bank-accounts

@@ -4,6 +4,7 @@ spring:
   config:
     import:
       - "classpath:bank-chassis-defaults.yml"
+      - "classpath:bank-chassis-client-defaults.yml"
       - "classpath:bank-persistence-defaults.yml"
   datasource:
     url: jdbc:postgresql://localhost:5432/my_bank_app
@@ -15,11 +16,23 @@ spring:
         default_schema: notifications
   liquibase:
     default-schema: notifications
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notifications-service
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: ru.yandex.practicum.mybank.notifications.dto.NotificationEvent
+    listener:
+      ack-mode: RECORD
+      concurrency: 3
   security:
     oauth2:
-      resourceserver:
-        jwt:
-          audiences: notifications-service
       client:
         registration:
           accounts-service:
@@ -30,6 +43,8 @@ spring:
             scope: customer:any:read
 
 mybank:
+  notifications:
+    topic: notifications
   clients:
     base-urls:
       accounts-service: http://localhost:8082

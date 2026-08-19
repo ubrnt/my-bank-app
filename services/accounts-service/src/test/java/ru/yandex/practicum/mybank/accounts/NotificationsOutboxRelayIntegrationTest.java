@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import ru.yandex.practicum.mybank.accounts.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.outbox.NotificationDeliveryException;
-import ru.yandex.practicum.mybank.notifications.outbox.NotificationRequest;
+import ru.yandex.practicum.mybank.notifications.outbox.NotificationEvent;
 import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxRelay;
 import ru.yandex.practicum.mybank.notifications.outbox.NotificationsOutboxProperties;
 
@@ -53,10 +53,10 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
 		notificationsOutboxRelay.relayPending();
 
-		ArgumentCaptor<NotificationRequest> captor = ArgumentCaptor.forClass(NotificationRequest.class);
-		verify(notificationsClient).send(captor.capture());
+		ArgumentCaptor<NotificationEvent> captor = ArgumentCaptor.forClass(NotificationEvent.class);
+		verify(notificationsEventPublisher).send(captor.capture());
 
-		NotificationRequest sent = captor.getValue();
+		NotificationEvent sent = captor.getValue();
 		assertThat(sent.eventUuid()).isEqualTo(eventUuid);
 		assertThat(sent.type()).isEqualTo(EventType.CUSTOMER_UPDATED.name().toLowerCase(Locale.ROOT));
 		UUID customerUuid = UUID.fromString(
@@ -72,7 +72,7 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
 	@Test
 	void returnsEventToPendingWhenDeliveryFails() {
-		doThrow(deliveryFailure()).when(notificationsClient).send(any());
+		doThrow(deliveryFailure()).when(notificationsEventPublisher).send(any());
 
 		notificationsOutboxRelay.relayPending();
 
@@ -84,7 +84,7 @@ class NotificationsOutboxRelayIntegrationTest extends AbstractIntegrationTest {
 
 	@Test
 	void failsEventOnceAttemptsAreSpent() {
-		doThrow(deliveryFailure()).when(notificationsClient).send(any());
+		doThrow(deliveryFailure()).when(notificationsEventPublisher).send(any());
 
 		for (int attempt = 0; attempt < notificationsOutboxProperties.maxAttempts(); attempt++) {
 			notificationsOutboxRelay.relayPending();
