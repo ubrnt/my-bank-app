@@ -24,10 +24,12 @@ public class CashService {
 
 	private final AccountsClient accountsClient;
 	private final CashOperationJournal journal;
+	private final CashMetrics metrics;
 
-	public CashService(AccountsClient accountsClient, CashOperationJournal journal) {
+	public CashService(AccountsClient accountsClient, CashOperationJournal journal, CashMetrics metrics) {
 		this.accountsClient = accountsClient;
 		this.journal = journal;
+		this.metrics = metrics;
 	}
 
 	public CashOperationDto deposit(UUID idempotencyKey, String login, long amount) {
@@ -87,6 +89,8 @@ public class CashService {
 	}
 
 	private void fail(CashOperation operation, String failureReason) {
+		metrics.operationFailed(operation.getType(), operation.getCustomerLogin(), failureReason);
+
 		try {
 			journal.fail(operation, failureReason);
 		} catch (ObjectOptimisticLockingFailureException e) {
