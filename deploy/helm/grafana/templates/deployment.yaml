@@ -27,16 +27,25 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "bank-common.name" . }}
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /api/health
               port: http
             periodSeconds: 10
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
               path: /api/health
               port: http
             periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 5
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
