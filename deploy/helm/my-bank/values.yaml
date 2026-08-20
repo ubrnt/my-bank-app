@@ -4,6 +4,9 @@ kafka:
 zipkin:
   enabled: true
 
+prometheus:
+  enabled: true
+
 accounts-service:
   enabled: true
 

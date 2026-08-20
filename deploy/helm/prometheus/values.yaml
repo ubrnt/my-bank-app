@@ -1,0 +1,29 @@
+image: prom/prometheus:v3.14.0
+
+replicaCount: 1
+
+service:
+  port: 9090
+
+retention: 24h
+
+scrapeInterval: 15s
+
+frontService:
+  scrape: true
+  target: host.minikube.internal:8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 512Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: prometheus.127.0.0.1.nip.io
+
+tests:
+  image: curlimages/curl:8.11.1
