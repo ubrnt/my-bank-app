@@ -1,5 +1,7 @@
 package ru.yandex.practicum.mybank.accounts.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.accounts.domain.Account;
@@ -21,6 +23,8 @@ import java.util.UUID;
 @Transactional
 public class TransactionsService {
 
+	private static final Logger log = LoggerFactory.getLogger(TransactionsService.class);
+
 	private final AccountRepository accountRepository;
 	private final TransactionRepository transactionRepository;
 	private final BalanceOperationRepository balanceOperationRepository;
@@ -37,6 +41,8 @@ public class TransactionsService {
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
+			log.debug("Transaction {} already applied, returning the recorded result", transactionUuid);
+
 			List<BalanceOperation> matched = balanceOperationRepository.findMatchingOperations(
 					transaction, OperationDirection.DEPOSIT, login, amount);
 			requireOperationCount(transaction, matched);
@@ -51,6 +57,8 @@ public class TransactionsService {
 		BalanceOperation operation = balanceOperationRepository
 				.save(new BalanceOperation(transaction, account, OperationDirection.DEPOSIT, amount));
 
+		log.info("Applied deposit {} to {}: amount {}", transactionUuid, login, amount);
+
 		return toDto(transaction, operation);
 	}
 
@@ -59,6 +67,8 @@ public class TransactionsService {
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
+			log.debug("Transaction {} already applied, returning the recorded result", transactionUuid);
+
 			List<BalanceOperation> matched = balanceOperationRepository.findMatchingOperations(
 					transaction, OperationDirection.WITHDRAW, login, amount);
 			requireOperationCount(transaction, matched);
@@ -73,6 +83,8 @@ public class TransactionsService {
 		BalanceOperation operation = balanceOperationRepository
 				.save(new BalanceOperation(transaction, account, OperationDirection.WITHDRAW, amount));
 
+		log.info("Applied withdrawal {} from {}: amount {}", transactionUuid, login, amount);
+
 		return toDto(transaction, operation);
 	}
 
@@ -85,6 +97,8 @@ public class TransactionsService {
 		Transaction transaction = claim.transaction();
 
 		if (!claim.acquired()) {
+			log.debug("Transaction {} already applied, returning the recorded result", transactionUuid);
+
 			List<BalanceOperation> matched = balanceOperationRepository.findMatchingTransferOperations(
 					transaction, OperationDirection.WITHDRAW, fromLogin, OperationDirection.DEPOSIT, toLogin, amount);
 			requireOperationCount(transaction, matched);
@@ -111,6 +125,8 @@ public class TransactionsService {
 				.save(new BalanceOperation(transaction, from, OperationDirection.WITHDRAW, amount));
 		BalanceOperation deposit = balanceOperationRepository
 				.save(new BalanceOperation(transaction, to, OperationDirection.DEPOSIT, amount));
+
+		log.info("Applied transfer {} from {} to {}: amount {}", transactionUuid, fromLogin, toLogin, amount);
 
 		return toTransferDto(transaction, withdrawal, deposit);
 	}
