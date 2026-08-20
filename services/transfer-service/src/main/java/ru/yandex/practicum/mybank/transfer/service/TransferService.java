@@ -37,6 +37,8 @@ public class TransferService {
 				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
 
 		if (operation.getStatus() == TransferOperationStatus.COMPLETED) {
+			log.debug("Operation {} already completed, returning the recorded result", operation.getUuid());
+
 			return TransferOperationDto.of(operation);
 		}
 
@@ -55,7 +57,11 @@ public class TransferService {
 		}
 
 		try {
-			return TransferOperationDto.of(journal.complete(operation, transaction));
+			TransferOperationDto completed = TransferOperationDto.of(journal.complete(operation, transaction));
+			log.info("Completed transfer {} from {} to {}: amount {}",
+					operation.getUuid(), fromLogin, toLogin, amount);
+
+			return completed;
 		} catch (ObjectOptimisticLockingFailureException e) {
 			logReclaimed(operation);
 
