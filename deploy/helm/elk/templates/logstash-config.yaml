@@ -12,7 +12,9 @@ data:
     input {
       tcp {
         port => {{ .Values.logstash.port }}
-        codec => json_lines
+        codec => json_lines {
+          ecs_compatibility => "disabled"
+        }
       }
     }
     output {
