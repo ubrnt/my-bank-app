@@ -209,7 +209,7 @@
     },
     {
       "id": 5,
-      "title": "Failed withdrawals (15m)",
+      "title": "Failed withdrawals",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -241,7 +241,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (login, reason) (increase(bank_cash_operation_failures_total{type=\"withdraw\"}[15m]))",
+          "expr": "sum by (login, reason) (bank_cash_operation_failures_total{type=\"withdraw\"})",
           "legendFormat": "{{login}}: {{reason}}",
           "refId": "A",
           "datasource": {
@@ -253,7 +253,7 @@
     },
     {
       "id": 6,
-      "title": "Failed transfers (15m)",
+      "title": "Failed transfers",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -285,7 +285,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (from_login, to_login, reason) (increase(bank_transfer_failures_total[15m]))",
+          "expr": "sum by (from_login, to_login, reason) (bank_transfer_failures_total)",
           "legendFormat": "{{from_login}} -> {{to_login}}: {{reason}}",
           "refId": "A",
           "datasource": {
@@ -297,7 +297,7 @@
     },
     {
       "id": 7,
-      "title": "Undeliverable notifications (15m)",
+      "title": "Undeliverable notifications",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -329,7 +329,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (login, reason) (increase(bank_notification_delivery_failures_total[15m]))",
+          "expr": "sum by (login, reason) (bank_notification_delivery_failures_total)",
           "legendFormat": "{{login}}: {{reason}}",
           "refId": "A",
           "datasource": {
