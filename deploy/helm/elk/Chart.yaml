@@ -1,0 +1,6 @@
+apiVersion: v2
+name: elk
+description: Elasticsearch, Logstash and Kibana for my-bank log collection
+type: application
+version: 1.0.0
+appVersion: "9.5.1"

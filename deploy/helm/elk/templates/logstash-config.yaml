@@ -1,0 +1,25 @@
+{{- $labels := dict "root" . "name" "elk-logstash" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elk-logstash
+  labels:
+    {{- include "elk.labels" $labels | nindent 4 }}
+data:
+  logstash.yml: |
+    api.http.host: "0.0.0.0"
+  my-bank.conf: |
+    input {
+      tcp {
+        port => {{ .Values.logstash.port }}
+        codec => json_lines
+      }
+    }
+    output {
+      elasticsearch {
+        hosts => ["http://elk-elasticsearch:{{ .Values.elasticsearch.port }}"]
+        index => "bank-logs-%{+YYYY.MM.dd}"
+        manage_template => false
+        ilm_enabled => false
+      }
+    }

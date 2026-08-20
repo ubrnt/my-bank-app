@@ -1,0 +1,40 @@
+elasticsearch:
+  image: docker.elastic.co/elasticsearch/elasticsearch:9.5.1
+  javaOpts: "-Xms512m -Xmx512m"
+  port: 9200
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+    limits:
+      memory: 1536Mi
+
+logstash:
+  image: docker.elastic.co/logstash/logstash:9.5.1
+  javaOpts: "-Xms384m -Xmx384m"
+  port: 5000
+  nodePort: 30500
+  apiPort: 9600
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+
+kibana:
+  image: docker.elastic.co/kibana/kibana:9.5.1
+  port: 5601
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  ingress:
+    enabled: true
+    className: nginx
+    host: kibana.127.0.0.1.nip.io
+
+tests:
+  image: curlimages/curl:8.11.1

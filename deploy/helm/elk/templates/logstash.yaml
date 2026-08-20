@@ -1,0 +1,84 @@
+{{- $labels := dict "root" . "name" "elk-logstash" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elk-logstash
+  labels:
+    {{- include "elk.labels" $labels | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "elk.selectorLabels" $labels | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/logstash-config.yaml") . | sha256sum }}
+      labels:
+        {{- include "elk.labels" $labels | nindent 8 }}
+    spec:
+      containers:
+        - name: logstash
+          image: {{ .Values.logstash.image }}
+          ports:
+            - name: tcp-input
+              containerPort: {{ .Values.logstash.port }}
+              protocol: TCP
+            - name: api
+              containerPort: {{ .Values.logstash.apiPort }}
+              protocol: TCP
+          env:
+            - name: LS_JAVA_OPTS
+              value: {{ .Values.logstash.javaOpts | quote }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: api
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: api
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.logstash.resources | nindent 12 }}
+          volumeMounts:
+            - name: settings
+              mountPath: /usr/share/logstash/config/logstash.yml
+              subPath: logstash.yml
+              readOnly: true
+            - name: pipeline
+              mountPath: /usr/share/logstash/pipeline
+              readOnly: true
+      volumes:
+        - name: settings
+          configMap:
+            name: elk-logstash
+            items:
+              - key: logstash.yml
+                path: logstash.yml
+        - name: pipeline
+          configMap:
+            name: elk-logstash
+            items:
+              - key: my-bank.conf
+                path: my-bank.conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elk-logstash
+  labels:
+    {{- include "elk.labels" $labels | nindent 4 }}
+spec:
+  type: NodePort
+  selector:
+    {{- include "elk.selectorLabels" $labels | nindent 4 }}
+  ports:
+    - name: tcp-input
+      port: {{ .Values.logstash.port }}
+      targetPort: tcp-input
+      nodePort: {{ .Values.logstash.nodePort }}
+      protocol: TCP
