@@ -83,6 +83,9 @@ config:
           request.timeout.ms: 3000
           max.block.ms: 3000
   mybank:
+    logging:
+      logstash:
+        destination: elk-logstash:5000
     clients:
       base-urls:
         accounts-service: http://accounts-service:8082
