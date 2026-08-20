@@ -18,6 +18,10 @@ dependencies:
     version: 1.0.0
     repository: "file://../prometheus"
     condition: prometheus.enabled
+  - name: grafana
+    version: 1.0.0
+    repository: "file://../grafana"
+    condition: grafana.enabled
   - name: accounts-service
     version: 1.0.0
     repository: "file://../accounts-service"

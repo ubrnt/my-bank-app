@@ -1,0 +1,24 @@
+image: grafana/grafana:13.1.4
+
+replicaCount: 1
+
+service:
+  port: 3000
+
+adminUser: admin
+adminPassword: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 384Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: grafana.127.0.0.1.nip.io
+
+tests:
+  image: curlimages/curl:8.11.1

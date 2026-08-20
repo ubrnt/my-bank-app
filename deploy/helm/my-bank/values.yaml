@@ -7,6 +7,9 @@ zipkin:
 prometheus:
   enabled: true
 
+grafana:
+  enabled: true
+
 accounts-service:
   enabled: true
 
