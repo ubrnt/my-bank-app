@@ -21,3 +21,31 @@ transfer-service:
     logging:
       level:
         ru.yandex.practicum.mybank: INFO
+
+zipkin:
+  ingress:
+    host: zipkin-test.127.0.0.1.nip.io
+
+prometheus:
+  retention: 6h
+  ingress:
+    host: prometheus-test.127.0.0.1.nip.io
+
+grafana:
+  ingress:
+    host: grafana-test.127.0.0.1.nip.io
+
+elk:
+  elasticsearch:
+    javaOpts: "-Xms384m -Xmx384m"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+  logstash:
+    nodePort: 30501
+  kibana:
+    ingress:
+      host: kibana-test.127.0.0.1.nip.io
