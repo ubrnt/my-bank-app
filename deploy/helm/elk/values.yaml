@@ -28,9 +28,9 @@ kibana:
   resources:
     requests:
       cpu: 100m
-      memory: 512Mi
+      memory: 768Mi
     limits:
-      memory: 1Gi
+      memory: 1536Mi
   ingress:
     enabled: true
     className: nginx
