@@ -1,0 +1,164 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bank-common.name" . }}-alerting
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+data:
+  rules.yaml: |
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: my-bank
+        folder: My Bank
+        interval: 1m
+        rules:
+          - uid: high-5xx-share
+            title: High 5xx share
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: Error
+            annotations:
+              summary: More than {{ .Values.alerts.errorShare }}% of HTTP responses are 5xx over the last 5 minutes
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: >-
+                    100 * sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+                    / sum(rate(http_server_requests_seconds_count[5m]))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator:
+                        type: gt
+                        params:
+                          - {{ .Values.alerts.errorShare }}
+          - uid: slow-http-p95
+            title: Slow HTTP responses
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: Error
+            annotations:
+              summary: HTTP p95 latency is above {{ .Values.alerts.p95Seconds }}s over the last 5 minutes
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: >-
+                    histogram_quantile(0.95,
+                    sum by (le) (rate(http_server_requests_seconds_bucket[5m])))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator:
+                        type: gt
+                        params:
+                          - {{ .Values.alerts.p95Seconds }}
+          - uid: failed-withdrawals-spike
+            title: Failed withdrawals spike
+            condition: C
+            for: 0s
+            noDataState: OK
+            execErrState: Error
+            annotations:
+              summary: More than {{ .Values.alerts.failedWithdrawals }} withdrawal attempts failed within 5 minutes
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: sum(increase(bank_cash_operation_failures_total{type="withdraw"}[5m]))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator:
+                        type: gt
+                        params:
+                          - {{ .Values.alerts.failedWithdrawals }}
+          - uid: failed-transfers-spike
+            title: Failed transfers spike
+            condition: C
+            for: 0s
+            noDataState: OK
+            execErrState: Error
+            annotations:
+              summary: More than {{ .Values.alerts.failedTransfers }} transfer attempts failed within 5 minutes
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: sum(increase(bank_transfer_failures_total[5m]))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator:
+                        type: gt
+                        params:
+                          - {{ .Values.alerts.failedTransfers }}
+          - uid: undeliverable-notifications
+            title: Undeliverable notifications
+            condition: C
+            for: 0s
+            noDataState: OK
+            execErrState: Error
+            annotations:
+              summary: Notifications could not be delivered within the last 5 minutes
+            data:
+              - refId: A
+                relativeTimeRange:
+                  from: 300
+                  to: 0
+                datasourceUid: prometheus
+                model:
+                  refId: A
+                  instant: true
+                  expr: sum(increase(bank_notification_delivery_failures_total[5m]))
+              - refId: C
+                datasourceUid: __expr__
+                model:
+                  refId: C
+                  type: threshold
+                  expression: A
+                  conditions:
+                    - evaluator:
+                        type: gt
+                        params:
+                          - 0

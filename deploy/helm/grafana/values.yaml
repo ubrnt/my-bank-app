@@ -15,6 +15,12 @@ resources:
   limits:
     memory: 384Mi
 
+alerts:
+  errorShare: 5
+  p95Seconds: 1
+  failedWithdrawals: 3
+  failedTransfers: 3
+
 ingress:
   enabled: true
   className: nginx
