@@ -42,6 +42,7 @@ public class NotificationsService {
 		try {
 			recipient = accountsClient.getCustomer(recipientUuid);
 		} catch (UnknownRecipientException e) {
+			log.error("Cannot deliver notification for event {}: recipient {} is unknown", eventUuid, recipientUuid);
 			metrics.deliveryFailed(NotificationsMetrics.UNKNOWN_LOGIN, "unknown_recipient");
 
 			throw e;
@@ -51,6 +52,8 @@ public class NotificationsService {
 		try {
 			message = messageRenderer.render(type, payload);
 		} catch (InvalidEventException e) {
+			log.error("Cannot deliver notification for event {} to {}: {}",
+					eventUuid, recipient.login(), e.getMessage());
 			metrics.deliveryFailed(recipient.login(), "invalid_event");
 
 			throw e;
