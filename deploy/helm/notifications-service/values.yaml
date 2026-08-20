@@ -82,6 +82,9 @@ config:
         ack-mode: RECORD
         concurrency: 3
   mybank:
+    logging:
+      logstash:
+        destination: elk-logstash:5000
     clients:
       base-urls:
         accounts-service: http://accounts-service:8082
