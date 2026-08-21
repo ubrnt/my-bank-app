@@ -18,6 +18,11 @@ exception: notifications never arrive that way. A sender writes an event to a tr
 and a relay publishes it to Apache Kafka, which runs in the cluster as its own StatefulSet;
 `notifications-service` reads the topic and has no HTTP API at all.
 
+Every service reports what it does to three systems that run in the cluster next to it: traces to
+Zipkin, metrics to Prometheus with dashboards and alerts in Grafana, and logs to Logstash, which
+stores them in Elasticsearch for Kibana. Traces, metrics and logs come from one place, see
+[Observability](#observability).
+
 ## Contents
 
 - [Stack](#stack)
@@ -26,6 +31,7 @@ and a relay publishes it to Apache Kafka, which runs in the cluster as its own S
 - [Build](#build)
 - [Run](#run)
 - [Configuration](#configuration)
+- [Observability](#observability)
 - [Test](#test)
 - [API](#api)
 - [Security](#security)
@@ -45,6 +51,9 @@ and a relay publishes it to Apache Kafka, which runs in the cluster as its own S
 - Kubernetes (minikube), Helm 3 compatible charts, ingress-nginx
 - Spring Data JPA, PostgreSQL 17, Liquibase migrations
 - Resilience4j (circuit breakers, time limiters), Spring Framework 7 `@Retryable`
+- Traces: Micrometer Tracing with Brave, Zipkin, `datasource-micrometer` for database spans
+- Metrics: Micrometer with Spring Boot Actuator, Prometheus, Grafana for dashboards and alerts
+- Logs: Logback with `logstash-logback-encoder`, Logstash, Elasticsearch, Kibana
 - Thymeleaf for the UI
 - Gradle multiproject
 - JUnit 5, Mockito, Testcontainers, WireMock, `spring-kafka-test`, Spring Cloud Contract
@@ -61,7 +70,7 @@ services/            one folder per service, each with its own Dockerfile
   notifications-service/
   front-service/
 libs/                shared libraries, published as plain Gradle projects
-  bank-chassis/                      batch worker, JSON, logging and tracing defaults
+  bank-chassis/                      batch worker, Logback config, JSON, tracing and metrics defaults
   bank-chassis-web/                  serving HTTP: error handling, request log, login from JWT
   bank-chassis-client/               calling HTTP: client factory, breaker, client credentials
   bank-persistence-starter/
@@ -76,7 +85,12 @@ deploy/              everything about deployment
     transfer-service/
     notifications-service/
     kafka/                 broker chart: StatefulSet in KRaft mode, services, volume
-    my-bank/               umbrella chart: four services, broker, ingress and smoke test
+    zipkin/                traces: collector and UI
+    prometheus/            metrics: scrape config, RBAC for pod discovery
+    grafana/               dashboards and alerts, all provisioned from files
+      dashboards/            two community dashboards plus one custom here
+    elk/                   logs: Elasticsearch, Logstash pipeline, Kibana
+    my-bank/               umbrella chart: four services, broker, observability, ingress, smoke test
     build-deps.sh          adds bank-common into the charts that need it
 infra/               what app needs to run, kept outside Kubernetes
   docker-compose.yml       Keycloak, and PostgreSQL with Kafka under the local profile
@@ -117,13 +131,22 @@ flowchart TD
         transfer -->|"event"| kafka
         kafka --> notifications["notifications-service :8083"]
         notifications -->|"recipient lookup"| accounts
+
+        accounts -.-> obs["Zipkin, Prometheus, Logstash"]
+        cash -.-> obs
+        transfer -.-> obs
+        notifications -.-> obs
     end
+
+    front -.->|"traces, metrics, logs"| obs
 
     classDef client fill:#fef3c7,stroke:#d97706,color:#1f2937
     classDef service fill:#dbeafe,stroke:#3b82f6,color:#1f2937
     classDef auth fill:#ede9fe,stroke:#7c3aed,color:#1f2937
     classDef entry fill:#dcfce7,stroke:#16a34a,color:#1f2937
     classDef broker fill:#fee2e2,stroke:#dc2626,color:#1f2937
+    classDef obs fill:#f1f5f9,stroke:#64748b,color:#1f2937
+    class obs obs
     class browser client
     class front,cash,transfer,accounts,notifications service
     class kafka broker
@@ -136,24 +159,30 @@ UI and Keycloak run outside cluster, four services with their databases and the 
 Databases are left off the diagram to keep it easy to read. See [Storage](#storage) for schemas and
 their tables.
 
-| Service | Port | Where | Responsibility |
-|---------|------|-------|----------------|
-| `front-service` | 8080 | outside | Thymeleaf UI, OAuth2 login, calls the ingress |
-| Keycloak | 8180 | outside | OAuth2 authorization server, realm `my-bank` |
-| Ingress | 8081 | cluster | Single entry point, routes by path, replaces the API gateway |
-| `accounts-service` | 8082 | cluster | Customers, accounts, transactions. Only place where money moves |
+| Service | Port | Where | Responsibility                                                                     |
+|---------|------|-------|------------------------------------------------------------------------------------|
+| `front-service` | 8080 | outside | Thymeleaf UI, OAuth2 login, calls the ingress                                      |
+| Keycloak | 8180 | outside | OAuth2 authorization server, realm `my-bank`                                       |
+| Ingress | 8081 | cluster | Single entry point, routes by path, replaces the API gateway                       |
+| `accounts-service` | 8082 | cluster | Customers, accounts, transactions. Only place where money moves                    |
 | `notifications-service` | 8083 | cluster | Reads events from Kafka, looks up the recipient, renders and delivers. No HTTP API |
-| `cash-service` | 8084 | cluster | Deposit and withdraw flow, plus its journal |
-| `transfer-service` | 8085 | cluster | Transfer flow, plus its journal |
-| PostgreSQL | 5432 | cluster | One StatefulSet per service that keeps data |
-| Kafka | 9092 | cluster | One broker in KRaft mode, topic `notifications`, own volume |
+| `cash-service` | 8084 | cluster | Deposit and withdraw flow, plus its journal                                        |
+| `transfer-service` | 8085 | cluster | Transfer flow, plus its journal                                                    |
+| PostgreSQL | 5432 | cluster | One StatefulSet per service that keeps data                                        |
+| Kafka | 9092 | cluster | One broker in KRaft mode, topic `notifications`, own volume                        |
+| Zipkin | 9411 | cluster | Collects traces from every service and the UI                                      |
+| Prometheus | 9090 | cluster | Gets metrics, discovers pods by annotations                                        |
+| Grafana | 3000 | cluster | Dashboards and alerts over Prometheus                                              |
+| Elasticsearch | 9200 | cluster | Stores log documents                                                               |
+| Logstash | 5000 | cluster | Takes JSON log events over TCP, writes them to Elasticsearch                       |
+| Kibana | 5601 | cluster | Reads and searches logs                                                            |
 
 Six shared libraries live in `libs/`:
 
 | Library | What it gives |
 |---------|---------------|
 | `bank-persistence-starter` | `BaseEntity` (id, uuid, timestamps, version), JPA auditing |
-| `bank-chassis` | Batch worker skeleton, shared defaults for JSON, logging and tracing |
+| `bank-chassis` | Batch worker skeleton, single Logback config, shared defaults for JSON, tracing and metrics |
 | `bank-chassis-web` | Error response, base exception handler, request logging filter, login taken from JWT |
 | `bank-chassis-client` | Service client factory: address from config, client credentials token, circuit breaker |
 | `bank-notifications-outbox-starter` | Outbox table, save API, relay that publishes events to the Kafka topic |
@@ -181,22 +210,31 @@ Contract stubs go to the local Maven repository, where consumer tests pick them 
 
 ## Run
 
-App runs in two halves: four backend services with their databases and a Kafka broker in
-Kubernetes, UI and Keycloak beside them in Docker Compose.
+App runs in two halves: four backend services with their databases, a Kafka broker and the
+observability stack in Kubernetes, UI and Keycloak beside them in Docker Compose.
 
 ### What you need
 
 - Docker (Docker Desktop, colima or similar)
 - `minikube`, `kubectl`, `helm`
-- about 6 GiB of memory and 5 CPUs for cluster.
+- about 8 GiB of memory and 4 CPUs for cluster.
+- these ports free on your machine before the cluster starts:
+
+| Port | Taken by | Needed for |
+|------|----------|------------|
+| 8081 | node port 80, published by minikube | UI and browser reaching the ingress |
+| 5000 | node port 30500, published by minikube | UI shipping its logs to Logstash |
+| 8080 | Compose | UI |
+| 8180 | Compose | Keycloak |
+| 5432 | Compose, `local` profile only | PostgreSQL for Gradle runs |
 
 ### Start cluster
 
-Port 8081 on your machine is published to port 80 of node, and that is how UI reaches ingress. It
-can only be set at creation time.
+Ports on your machine are published to ports of the node, and that can only be set at creation time:
+8081 to port 80 for the ingress, 5000 to the Logstash node port for logs from the UI.
 
 ```bash
-minikube start --driver=docker --cpus=5 --memory=6g --ports=8081:80
+minikube start --driver=docker --cpus=4 --memory=8g --ports=8081:80,5000:30500
 minikube addons enable ingress
 ```
 
@@ -224,11 +262,12 @@ helm upgrade --install my-bank deploy/helm/my-bank \
   --set accounts-service.secrets.ACCOUNTS_DB_PASSWORD="${ACCOUNTS_DB_PASSWORD:-accounts}" \
   --set notifications-service.secrets.NOTIFICATIONS_DB_PASSWORD="${NOTIFICATIONS_DB_PASSWORD:-notifications}" \
   --set cash-service.secrets.CASH_DB_PASSWORD="${CASH_DB_PASSWORD:-cash}" \
-  --set transfer-service.secrets.TRANSFER_DB_PASSWORD="${TRANSFER_DB_PASSWORD:-transfer}"
+  --set transfer-service.secrets.TRANSFER_DB_PASSWORD="${TRANSFER_DB_PASSWORD:-transfer}" \
+  --set grafana.adminPassword="${GRAFANA_ADMIN_PASSWORD:-admin}"
 ```
 
-Database passwords are not stored in chart. They are passed at install time with a shell default,
-and a missing one stops install with a message naming it.
+Database passwords and the Grafana password are not stored in chart. They are passed at install time
+with a shell default, and a missing one stops install with a message naming it.
 
 Check startup:
 
@@ -249,10 +288,24 @@ docker compose up -d --build
 ```
 
 - UI: http://localhost:8080
-- Keycloak: http://localhost:8180 (admin console: `admin`/`admin`)
+- Keycloak: http://localhost:8180
 
 Realm `my-bank` is imported from `infra/keycloak/my-bank-realm.json`. Log in as `user1` /
 `password1`: page shows profile, balance and three forms.
+
+### Credentials
+
+| Where | Login | Password |
+|-------|-------|----------|
+| UI at http://localhost:8080 | `user1`, `user2`, `user3` | `password1`, `password2`, `password3` |
+| Keycloak admin console | `admin` | `admin` |
+| Grafana | `admin` | `admin`, or whatever `--set grafana.adminPassword` was given at install |
+| Databases | `<service>_service` | the service name, or whatever `--set <service>-service.secrets.<SERVICE>_DB_PASSWORD` was given |
+| Zipkin, Prometheus, Kibana | no authentication | |
+
+Users and the Keycloak admin come from the realm export, so they are the same on every install.
+Passwords passed at install time have shell defaults in the commands above, and production takes
+them from an existing secret instead, see [Environments](#environments).
 
 ### One service at a time
 
@@ -278,8 +331,8 @@ Umbrella chart ships three value files. Namespaces keep environments apart:
 | File | Changes |
 |------|---------|
 | `values-dev.yaml` | debug logging |
-| `values-test.yaml` | info logging |
-| `values-prod.yaml` | two replicas for accounts, cash and transfer, larger volumes, info logging, secrets taken from existing secrets instead of values |
+| `values-test.yaml` | info logging, own ingress hosts and Logstash node port, shorter metrics retention, smaller Elasticsearch heap |
+| `values-prod.yaml` | two replicas for accounts, cash and transfer, larger volumes, info logging, secrets taken from existing secrets instead of values, metrics kept for 15 days, larger Elasticsearch and Logstash |
 
 ```bash
 helm upgrade --install my-bank deploy/helm/my-bank \
@@ -288,8 +341,22 @@ helm upgrade --install my-bank deploy/helm/my-bank \
   --set accounts-service.secrets.ACCOUNTS_DB_PASSWORD=accounts \
   --set notifications-service.secrets.NOTIFICATIONS_DB_PASSWORD=notifications \
   --set cash-service.secrets.CASH_DB_PASSWORD=cash \
-  --set transfer-service.secrets.TRANSFER_DB_PASSWORD=transfer
+  --set transfer-service.secrets.TRANSFER_DB_PASSWORD=transfer \
+  --set grafana.adminPassword=admin
 ```
+
+The UI in Compose points at the dev release: the ingress on port 8081 and the Logstash node port on
+5000. Another environment publishes its own node port, so both addresses are variables:
+
+```bash
+minikube start --driver=docker --cpus=4 --memory=8g --ports=8081:80,5000:30500,5001:30501
+
+LOGSTASH_DESTINATION=host.docker.internal:5001 \
+  ZIPKIN_ENDPOINT=http://zipkin-test.127.0.0.1.nip.io:8081/api/v2/spans \
+  docker compose up -d front-service
+```
+
+Without them the UI keeps sending its logs and traces to the wrong addresses.
 
 For production chart creates no secrets. Create them yourself and name them in `existingSecret`.
 Each one needs both keys, database password and client secret:
@@ -330,10 +397,13 @@ there for Gradle runs and nothing else. Schemas and roles in the database are cr
 
 ### Logs
 
-Incoming requests are logged as `received` and `handled`, outgoing calls as `calling`, `finished` or
-`failed`, and breakers report their own changes as
+Every service logs through one Logback configuration that lives in `bank-chassis`, so the format is
+the same everywhere: readable lines on the console, the same events as JSON to Logstash. Incoming
+requests are logged as `received` and `handled`, outgoing calls as `calling`, `finished` or
+`failed`, business operations report what they applied, and breakers report their own changes as
 `circuit breaker accounts-service: CLOSED -> OPEN`. A traceId travels with synchronous REST calls,
-so one operation can be followed across every service it touches. Pod names are shortened here:
+so one operation can be followed across every service it touches, in the console and in Kibana
+alike. Pod names are shortened here:
 
 ```
 [cash-service]     2026-08-13T22:14:41.621Z  INFO [6a7e41d13aebe15c7e21f8fafae65db7,7e21f8fafae65db7] r.y.p.m.c.web.RequestLoggingFilter   : received POST /api/cash/deposit
@@ -344,14 +414,16 @@ so one operation can be followed across every service it touches. Pod names are 
 [cash-service]     2026-08-13T22:14:41.690Z  INFO [6a7e41d13aebe15c7e21f8fafae65db7,7e21f8fafae65db7] r.y.p.m.c.web.RequestLoggingFilter   : handled POST /api/cash/deposit 200 in 68 ms
 ```
 
-Delivery of a notification leaves the traceId behind, because the event travels through Kafka: the
-relay publishes it, and the consumer picks it up in its own thread later. Here cash-service ships an
-event, notifications reads it, asks accounts who the recipient is, and renders the message:
+Delivery of a notification runs under a trace of its own, because the event travels through Kafka:
+the relay publishes it in its own thread, and its trace id, not the one of the user request, follows
+the event to the consumer. Here the relay of cash-service ships an event, notifications reads it,
+asks accounts who the recipient is, and renders the message:
 
 ```
-[cash-service]          2026-08-18T05:00:13.108Z DEBUG [6a7e413378f710a9278ddcd3554200e8,278ddcd3554200e8] r.y.p.m.chassis.worker.BatchProcessor : Processing 1 items
-[notifications-service] 2026-08-18T05:00:14.665Z  INFO [,] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Игорь): Счёт *0001: снятие 300. Доступно 105 500
-[notifications-service] 2026-08-18T05:00:15.146Z  INFO [,] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Игорь): Данные профиля обновлены. Если это были не вы, обратитесь в банк
+[cash-service]          2026-08-20T22:48:30.630Z DEBUG [6a87843e2f3ce5eec1ee2f51176a03e6,c1ee2f51176a03e6] r.y.p.m.chassis.worker.BatchProcessor : Processing 1 items
+[notifications-service] 2026-08-20T22:48:30.709Z DEBUG [6a87843e2f3ce5eec1ee2f51176a03e6,204782275e1034dc] r.y.p.m.c.c.ClientLoggingInterceptor : calling accounts-service GET /api/customers/3c1a549b-173a-432a-9260-5e7e6daa52b7
+[accounts-service]      2026-08-20T22:48:30.754Z  INFO [6a87843e2f3ce5eec1ee2f51176a03e6,8ad630106c07ef49] r.y.p.m.c.web.RequestLoggingFilter   : handled GET /api/customers/3c1a549b-173a-432a-9260-5e7e6daa52b7 200 in 27 ms
+[notifications-service] 2026-08-20T22:48:30.773Z  INFO [6a87843e2f3ce5eec1ee2f51176a03e6,37c5c446073c5f43] r.y.p.m.n.service.NotificationsService : Notification to user1 (Иванов Иван): Счёт *0001: пополнение на 1. Доступно 181 094
 ```
 
 #### Cluster
@@ -361,7 +433,7 @@ five pods at most:
 
 ```bash
 kubectl --context=minikube logs -n my-bank-dev -l app.kubernetes.io/part-of=my-bank \
-  --prefix -f --max-log-requests=10
+  --prefix -f --max-log-requests=20
 ```
 
 One service, or one database:
@@ -388,9 +460,9 @@ artifact.
 | Layer | Holds | Lives in |
 |-------|-------|----------|
 | `application.yml` of service | port, schema, scopes, breaker instances, database user, Kafka defaults for local run | service itself |
-| `bank-chassis-defaults.yml` and its `-web` and `-client` companions, `bank-persistence-defaults.yml` | shared defaults: JSON, logging pattern, client timeouts, breaker and time limiter configs, Keycloak addresses for local run, JPA settings | libraries, imported by services that need them |
-| ConfigMap | database URL, addresses of other services, Kafka topic, producer and consumer settings, Keycloak addresses, log levels | `config` in chart values |
-| Secret | database password, client secret | `secrets` in chart values, or an existing secret |
+| `bank-chassis-defaults.yml` and its `-web` and `-client` companions, `bank-persistence-defaults.yml` | shared defaults: JSON, logging pattern, sampling and actuator exposure, client timeouts, breaker and time limiter configs, Keycloak addresses for local run, JPA settings | libraries, imported by services that need them |
+| ConfigMap | database URL, addresses of other services, Kafka topic, producer and consumer settings, Keycloak addresses, log levels, Zipkin endpoint, Logstash address | `config` in chart values |
+| Secret | database password, client secret, Grafana admin password | `secrets` in chart values, or an existing secret |
 
 ConfigMap is mounted as a file and picked up with `SPRING_CONFIG_ADDITIONAL_LOCATION=file:/config/`,
 so it overrides defaults baked into jar. Secret arrives as environment variables under same names
@@ -399,6 +471,119 @@ placeholders already use, so code knows nothing about it.
 Changing only ConfigMap would leave pods running with old settings, because Deployment itself would
 not change. Pod template carries a checksum of ConfigMap, so Helm rolls pods whenever configuration
 changes.
+
+## Observability
+
+Every service and the UI ship traces, metrics and logs. Servers run in the cluster, one subchart per
+project:
+
+| UI | Address | What it answers |
+|----|---------|-----------------|
+| Zipkin | http://zipkin.127.0.0.1.nip.io:8081 | where a request spent its time and which call failed |
+| Prometheus | http://prometheus.127.0.0.1.nip.io:8081 | raw metrics and scrape targets |
+| Grafana | http://grafana.127.0.0.1.nip.io:8081 | dashboards and alerts, see [Credentials](#credentials) |
+| Kibana | http://kibana.127.0.0.1.nip.io:8081 | logs of every service in one place |
+
+### Traces
+
+`bank-chassis` brings Micrometer Tracing with Brave and the Zipkin reporter, so every service and
+the front service report spans out of box. What one trace covers:
+
+- incoming HTTP requests, tagged with method, path and status;
+- outgoing HTTP calls, with the `traceparent` header carrying the trace to the next service;
+- database queries, spans for connection, statement and result set, from `datasource-micrometer`;
+- Kafka publishes and consumes, turned on with `observation-enabled` for the template and the
+  listener.
+
+Sampling level is 1.0. Spans of `/actuator/**` requests and of Spring Security filters are dropped as
+noise.
+
+Notification delivery is a trace of its own: the user request only writes an outbox row, and the relay
+publishes it later in its own thread, so the Kafka publish and the consume belong to the relay tick.
+Joining them would take the trace context stored in the outbox, see
+[Left out on purpose](#left-out-on-purpose).
+
+### Metrics
+
+Actuator exposes `/actuator/prometheus` in every service and in the UI, and the endpoint is open
+without a token, same as health. The ingress does not route it, so it is reachable from inside the
+cluster only, which is what keeps the login tags below out of reach. A real deployment would close it
+to everything but the Prometheus service account.
+
+Prometheus finds its targets itself: `kubernetes_sd_configs` asks the API server for pods and keeps
+those carrying `prometheus.io/scrape`, taking path and port from the neighbouring annotations. That
+needs rights, so the chart creates a ServiceAccount with a Role limited to pods of its namespace. The
+UI lives outside the cluster and is scraped as a static target at `host.minikube.internal:8080`.
+
+Beside HTTP, JVM and Spring Boot metrics, services publish three custom counters the task asks for:
+
+| Metric | Tags | Grows when |
+|--------|------|------------|
+| `bank_cash_operation_failures_total` | `type`, `login`, `reason` | a deposit or a withdrawal was rejected by accounts or accounts was unreachable |
+| `bank_transfer_failures_total` | `from_login`, `to_login`, `reason` | a transfer failed, for either reason |
+| `bank_notification_delivery_failures_total` | `login`, `reason` | a notification cannot be delivered at all: unknown recipient or a broken event |
+
+### Dashboards and alerts
+
+The datasource, the dashboards and the alert rules are provisioned from files in the chart, so what
+the repository holds is what Grafana shows.
+
+| Dashboard | Source |
+|-----------|--------|
+| JVM (Micrometer) | community dashboard 4701 |
+| Spring Boot 3.x Statistics | community dashboard 19004 |
+| Bank HTTP and Business | written here, panels below |
+
+| Panel | Query |
+|-------|-------|
+| Requests per second | `rate(http_server_requests_seconds_count[1m])` by application |
+| Latency percentiles | p50, p95 and p99 from `http_server_requests_seconds_bucket` |
+| 4xx responses per second | the same rate with `status=~"4.."` |
+| 5xx responses per second | the same rate with `status=~"5.."` |
+| Failed withdrawals | `bank_cash_operation_failures_total{type="withdraw"}` by login and reason |
+| Failed transfers | `bank_transfer_failures_total` by logins and reason |
+| Undeliverable notifications | `bank_notification_delivery_failures_total` by login and reason |
+
+Five alert rules ship with the chart, with thresholds in `grafana.alerts` of the values file:
+
+| Alert | Fires when |
+|-------|-----------|
+| High 5xx share | more than 5% of responses are 5xx for 5 minutes |
+| Slow HTTP responses | p95 above 1 second for 5 minutes |
+| Failed withdrawals spike | more than 3 failed withdrawals within 5 minutes |
+| Failed transfers spike | more than 3 failed transfers within 5 minutes |
+| Undeliverable notifications | any notification could not be delivered at all |
+
+Alerts use the default contact point, which sends nothing, and are read in Grafana under Alerting.
+Business rules treat missing data as normal: their counters do not exist until the first failure.
+
+### Logs in Kibana
+
+Logback config comes from `bank-chassis`: readable lines on the console, the same events as JSON to
+Logstash. The TCP appender is only created when an address is configured, so tests and Gradle runs
+stay quiet.
+
+Logstash takes them on port 5000 with the `json_lines` codec and writes to Elasticsearch under
+`bank-logs-YYYY.MM.dd`. No filters are needed: events arrive as structured JSON, and neither
+passwords nor account numbers are logged.
+
+Services inside the cluster send to `elk-logstash:5000` by Service DNS. The UI runs outside and uses
+the node port published at start, `host.docker.internal:5000`. Both its addresses, for logs and for
+traces, default to the dev release and are overridden with `LOGSTASH_DESTINATION` and
+`ZIPKIN_ENDPOINT` when the cluster runs another environment, which publishes them elsewhere.
+
+Kibana needs one manual step per Elasticsearch volume: in Discover, create a data view over
+`bank-logs-*` with `@timestamp` as the time field. Provisioning it would take a job calling the saved
+objects API.
+
+After that a query by trace id in Discover collects one operation across services, the same lines
+[Logs](#logs) shows on the console.
+
+### Storage of observability data
+
+Nothing here is persistent: Zipkin keeps traces in memory, Prometheus and Elasticsearch write to
+`emptyDir`, Grafana has no state at all, and a restarted pod starts empty. Production would give
+Prometheus and Elasticsearch volumes of their own, the way service databases have them.
 
 ## Test
 
@@ -417,7 +602,10 @@ authentication with `spring-security-test` and stub the services they call.
 - **Integration** (`@SpringBootTest` with Testcontainers PostgreSQL): the cash and transfer flows
   against a real database. Journal transitions, outbox rows, repeats with the same key, expired
   claims and duplicate rejection.
-- **Client behaviour**: retries against WireMock (`AccountsClientTest`).
+- **Client behaviour**: retries against WireMock (`AccountsClientTest`), and the trace context an
+  outgoing call carries in its `traceparent` header.
+- **Observability**: `/actuator/prometheus` answers without a token, and the three business counters
+  tick with the right tags when an operation fails.
 - **Kafka** (`@EmbeddedKafka`): the relay publishes an event and fails when the broker is
   unreachable; an operation in `accounts`, `cash` and `transfer` puts the expected message into the
   topic; `notifications-service` stores what it reads, ignores a repeated `event_uuid` and skips a
@@ -442,7 +630,8 @@ helm lint deploy/helm/my-bank
 helm template my-bank deploy/helm/my-bank --set accounts-service.secrets.ACCOUNTS_DB_PASSWORD=x \
   --set notifications-service.secrets.NOTIFICATIONS_DB_PASSWORD=x \
   --set cash-service.secrets.CASH_DB_PASSWORD=x \
-  --set transfer-service.secrets.TRANSFER_DB_PASSWORD=x
+  --set transfer-service.secrets.TRANSFER_DB_PASSWORD=x \
+  --set grafana.adminPassword=x
 ```
 
 Chart tests run against an installed release:
@@ -456,6 +645,10 @@ Every service chart brings a test pod that asks its own service for `/actuator/h
 deletes it, which proves the controller works and not only that the port answers. One call proves a
 lot: Service resolves by name, its selector matches pods, pod passed readiness, health needs no
 token, and database answers, since data source health is part of that answer.
+
+Observability charts bring their own test pods: Zipkin and Grafana answer their health endpoints,
+Prometheus is ready and already has the pod discovery job active, Elasticsearch reports a green or
+yellow cluster and Kibana is available. Ten test pods in total.
 
 Umbrella chart adds a smoke test that runs after them and goes through ingress. Request without a
 token must get 401, request with a made up token must get 401 as well, not 500. Together that shows
@@ -540,13 +733,7 @@ security chain allows `/actuator/health` and denies everything else.
 - Logout is RP-initiated, so the session dies locally and at Keycloak.
 - CSRF protection is on, Thymeleaf puts the token into every form.
 
-Preloaded users:
-
-| Username | Password |
-|----------|----------|
-| `user1` | `password1` |
-| `user2` | `password2` |
-| `user3` | `password3` |
+Preloaded users and every other login are listed in [Credentials](#credentials).
 
 ### Services (service to service)
 
@@ -566,7 +753,12 @@ gives `401`, a missing scope gives `403`.
 
 Client secrets and database passwords reach a pod as environment variables from a Secret. The
 chart either creates that Secret from its values or uses one you created, see
-[Configuration](#configuration). Database passwords are never stored in the chart.
+[Configuration](#configuration). Passwords themselves are never stored in the chart.
+
+Observability UIs are the exception to all of the above: only Grafana asks for a login, Zipkin,
+Prometheus and Kibana are open to anyone who reaches the port. On a laptop that port is `localhost`
+only; a real deployment would put an authenticating proxy in front of them and turn the Elasticsearch
+security back on.
 
 ## Resilience
 
@@ -825,8 +1017,13 @@ erDiagram
 
 ## Left out on purpose
 
-One thing was left out of scope on purpose, to make the sprint smaller and to deliver the core
+A few things were left out of scope on purpose, to make the sprint smaller and to deliver the core
 functionality first.
+
+**No trace context carried through the outbox.** A user request ends when the outbox row is written,
+and the delivery is traced separately, under the relay tick that published it. Joining them would
+mean storing the `traceparent` in a column and restoring the context in the relay before it
+publishes.
 
 **No scanner to check journals for stuck rows.** A `cash-service` or `transfer-service` process can
 die for various reasons while waiting for an answer from accounts, which leaves rows in the
