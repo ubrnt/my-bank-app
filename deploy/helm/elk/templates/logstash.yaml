@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "elk.labels" $labels | nindent 4 }}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -30,6 +32,12 @@ spec:
           env:
             - name: LS_JAVA_OPTS
               value: {{ .Values.logstash.javaOpts | quote }}
+          startupProbe:
+            httpGet:
+              path: /
+              port: api
+            periodSeconds: 10
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /
@@ -40,7 +48,6 @@ spec:
             httpGet:
               path: /
               port: api
-            initialDelaySeconds: 60
             periodSeconds: 20
           resources:
             {{- toYaml .Values.logstash.resources | nindent 12 }}

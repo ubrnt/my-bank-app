@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "elk.labels" $labels | nindent 4 }}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -27,6 +29,12 @@ spec:
               value: http://elk-elasticsearch:{{ .Values.elasticsearch.port }}
             - name: TELEMETRY_ENABLED
               value: "false"
+          startupProbe:
+            httpGet:
+              path: /api/status
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /api/status
@@ -37,7 +45,6 @@ spec:
             httpGet:
               path: /api/status
               port: http
-            initialDelaySeconds: 90
             periodSeconds: 20
           resources:
             {{- toYaml .Values.kibana.resources | nindent 12 }}
