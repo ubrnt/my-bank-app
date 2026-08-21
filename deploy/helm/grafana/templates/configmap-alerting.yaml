@@ -140,7 +140,7 @@ data:
             noDataState: OK
             execErrState: Error
             annotations:
-              summary: Some notifications could not be delivered at all
+              summary: Notifications could not be delivered within the last 5 minutes
             data:
               - refId: A
                 relativeTimeRange:
@@ -150,7 +150,7 @@ data:
                 model:
                   refId: A
                   instant: true
-                  expr: sum(bank_notification_delivery_failures_total)
+                  expr: sum(increase(bank_notification_delivery_failures_total[5m]))
               - refId: C
                 datasourceUid: __expr__
                 model:
