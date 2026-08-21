@@ -6,6 +6,8 @@ metadata:
   labels:
     {{- include "elk.labels" $labels | nindent 4 }}
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -31,6 +33,12 @@ spec:
               value: my-bank-logs
             - name: ES_JAVA_OPTS
               value: {{ .Values.elasticsearch.javaOpts | quote }}
+          startupProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /_cluster/health
@@ -41,7 +49,6 @@ spec:
             httpGet:
               path: /_cluster/health
               port: http
-            initialDelaySeconds: 60
             periodSeconds: 20
           resources:
             {{- toYaml .Values.elasticsearch.resources | nindent 12 }}
