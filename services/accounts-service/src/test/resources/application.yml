@@ -20,3 +20,8 @@ mybank:
       max-attempts: 5
       retry-delay: 0s
       max-retry-delay: 0s
+
+management:
+  tracing:
+    export:
+      enabled: false

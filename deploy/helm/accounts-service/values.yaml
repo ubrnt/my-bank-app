@@ -54,6 +54,11 @@ database:
   storage: 1Gi
 
 config:
+  management:
+    tracing:
+      export:
+        zipkin:
+          endpoint: http://zipkin:9411/api/v2/spans
   spring:
     datasource:
       url: jdbc:postgresql://{{ include "bank-common.databaseName" . }}:5432/accounts
@@ -76,6 +81,9 @@ config:
           request.timeout.ms: 3000
           max.block.ms: 3000
   mybank:
+    logging:
+      logstash:
+        destination: elk-logstash:5000
     notifications:
       topic: notifications
       partitions: 3

@@ -32,6 +32,8 @@ spring:
             scope: transactions:write
   kafka:
     bootstrap-servers: localhost:9092
+    template:
+      observation-enabled: true
     admin:
       fail-fast: true
     producer:

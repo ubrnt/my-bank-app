@@ -1,6 +1,18 @@
 kafka:
   enabled: true
 
+zipkin:
+  enabled: true
+
+prometheus:
+  enabled: true
+
+grafana:
+  enabled: true
+
+elk:
+  enabled: true
+
 accounts-service:
   enabled: true
 

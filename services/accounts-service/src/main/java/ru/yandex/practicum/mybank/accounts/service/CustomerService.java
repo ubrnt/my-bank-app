@@ -1,5 +1,7 @@
 package ru.yandex.practicum.mybank.accounts.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.mybank.accounts.domain.Account;
@@ -21,6 +23,8 @@ import java.util.UUID;
 @Service
 @Transactional(readOnly = true)
 public class CustomerService {
+
+	private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
 
 	private final CustomerRepository customerRepository;
 	private final AccountRepository accountRepository;
@@ -60,8 +64,11 @@ public class CustomerService {
 		customer.setBirthdate(birthdate);
 
 		if (changed) {
+			log.info("Updated profile of {}", login);
 			notificationsOutboxService.save(EventType.CUSTOMER_UPDATED.name(), AggregateType.CUSTOMER.name(),
 					customer.getId(), customer.getUuid(), new CustomerUpdatedPayloadDto(customer.getUuid()));
+		} else {
+			log.debug("Profile of {} did not change, skipping the event", login);
 		}
 
 		return toDto(customerAccount);

@@ -10,6 +10,22 @@ dependencies:
     version: 1.0.0
     repository: "file://../kafka"
     condition: kafka.enabled
+  - name: zipkin
+    version: 1.0.0
+    repository: "file://../zipkin"
+    condition: zipkin.enabled
+  - name: prometheus
+    version: 1.0.0
+    repository: "file://../prometheus"
+    condition: prometheus.enabled
+  - name: grafana
+    version: 1.0.0
+    repository: "file://../grafana"
+    condition: grafana.enabled
+  - name: elk
+    version: 1.0.0
+    repository: "file://../elk"
+    condition: elk.enabled
   - name: accounts-service
     version: 1.0.0
     repository: "file://../accounts-service"

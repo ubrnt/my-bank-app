@@ -21,10 +21,12 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, WebEndpointProperties endpoints,
 			ClientRegistrationRepository clientRegistrations) throws Exception {
 		String healthPath = endpoints.getBasePath() + "/health/**";
+		String prometheusPath = endpoints.getBasePath() + "/prometheus";
 		return http
 				.authorizeHttpRequests(requests -> requests
 						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers(HttpMethod.GET, healthPath).permitAll()
+						.requestMatchers(HttpMethod.GET, prometheusPath).permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(Customizer.withDefaults())
 				.logout(logout -> logout.logoutSuccessHandler(logoutSuccessHandler(clientRegistrations)))

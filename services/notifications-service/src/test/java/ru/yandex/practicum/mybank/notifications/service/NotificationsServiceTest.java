@@ -1,13 +1,11 @@
 package ru.yandex.practicum.mybank.notifications.service;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.mybank.notifications.client.AccountsClient;
 import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
+import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
 import ru.yandex.practicum.mybank.notifications.client.dto.CustomerResponse;
 import ru.yandex.practicum.mybank.notifications.domain.EventType;
 import ru.yandex.practicum.mybank.notifications.domain.Notification;
@@ -24,12 +22,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class NotificationsServiceTest {
 
 	private static final UUID EVENT_UUID = UUID.fromString("1b7f4a90-0d51-4c2e-9f77-0a1e5c3b0001");
@@ -40,17 +38,12 @@ class NotificationsServiceTest {
 			{"uuid": "cccc0001-2222-4333-8444-555566660001", "type": "DEPOSIT"}
 			""");
 
-	@Mock
-	private NotificationRepository notificationRepository;
-
-	@Mock
-	private MessageRenderer messageRenderer;
-
-	@Mock
-	private AccountsClient accountsClient;
-
-	@InjectMocks
-	private NotificationsService notificationsService;
+	private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
+	private final MessageRenderer messageRenderer = mock(MessageRenderer.class);
+	private final AccountsClient accountsClient = mock(AccountsClient.class);
+	private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+	private final NotificationsService notificationsService = new NotificationsService(
+			notificationRepository, messageRenderer, accountsClient, new NotificationsMetrics(meterRegistry));
 
 	@Test
 	void resolvesRecipientRendersAndSaves() {
@@ -90,6 +83,40 @@ class NotificationsServiceTest {
 
 		verify(notificationRepository, never()).insertIfAbsent(any(), any(), any(), anyString(), anyString(),
 				anyString());
+		assertThat(meterRegistry.find(NotificationsMetrics.DELIVERY_FAILURES).counter()).isNull();
+	}
+
+	@Test
+	void countsDeliveryToUnknownRecipient() {
+		when(accountsClient.getCustomer(RECIPIENT_UUID))
+				.thenThrow(new UnknownRecipientException(RECIPIENT_UUID, new RuntimeException("404")));
+
+		assertThatThrownBy(() -> notificationsService.receive(
+				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
+				.isInstanceOf(UnknownRecipientException.class);
+
+		assertThat(deliveryFailures("unknown_recipient")).isEqualTo(1.0);
+	}
+
+	@Test
+	void countsUndeliverableEvent() {
+		when(accountsClient.getCustomer(RECIPIENT_UUID))
+				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
+		when(messageRenderer.render(EventType.MONEY_DEPOSITED, payload))
+				.thenThrow(new InvalidEventException("Event payload lacks field 'amount'"));
+
+		assertThatThrownBy(() -> notificationsService.receive(
+				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
+				.isInstanceOf(InvalidEventException.class);
+
+		assertThat(deliveryFailures("invalid_event")).isEqualTo(1.0);
+	}
+
+	private double deliveryFailures(String reason) {
+		return meterRegistry.get(NotificationsMetrics.DELIVERY_FAILURES)
+				.tags("reason", reason)
+				.counter()
+				.count();
 	}
 
 	private Notification notification() {

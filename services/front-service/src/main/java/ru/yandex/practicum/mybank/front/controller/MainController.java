@@ -1,6 +1,8 @@
 package ru.yandex.practicum.mybank.front.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,6 +51,8 @@ import java.util.UUID;
 @Controller
 public class MainController {
 
+	private static final Logger log = LoggerFactory.getLogger(MainController.class);
+
 	private static final String IDEMPOTENCY_KEY_CONFLICT = "idempotency_key_conflict";
 	private static final String CASH_PATH = "/cash";
 
@@ -79,6 +83,7 @@ public class MainController {
 			@RequestParam("name") String name,
 			@RequestParam("birthdate") LocalDate birthdate
 	) {
+		log.info("Profile update requested");
 		gatewayClient.updateCustomer(new UpdateProfileRequest(name, birthdate));
 		fillModel(model, List.of(), messages.infoMessage("info.profile_updated"), newKeys());
 
@@ -92,6 +97,7 @@ public class MainController {
 			@RequestParam("value") long value,
 			@RequestParam("action") CashAction action
 	) {
+		log.info("Cash {} of {} requested with key {}", action, value, idempotencyKey);
 		String info = action == CashAction.PUT ? deposit(idempotencyKey, value) : withdraw(idempotencyKey, value);
 		fillModel(model, List.of(), info, newKeys());
 
@@ -105,6 +111,7 @@ public class MainController {
 			@RequestParam("value") long value,
 			@RequestParam("login") String login
 	) {
+		log.info("Transfer of {} to {} requested with key {}", value, login, idempotencyKey);
 		gatewayClient.transfer(idempotencyKey, new TransferRequest(login, value));
 
 		List<AccountDto> accounts = fillModel(model, List.of(), null, newKeys());
@@ -115,6 +122,13 @@ public class MainController {
 
 	@ExceptionHandler(GatewayException.class)
 	public String handleGatewayFailure(GatewayException exception, HttpServletRequest request, Model model) {
+		ErrorResponse response = exception.getResponse();
+		if (response == null) {
+			log.error("Gateway call failed without a readable error response", exception);
+		} else {
+			log.warn("Gateway rejected the action: {}", response.code());
+		}
+
 		fillModel(model, messages.errorMessages(exception), null, keysAfterFailure(exception, request));
 
 		return "main";
@@ -214,6 +228,7 @@ public class MainController {
 			accounts = gatewayClient.getOtherCustomers().stream()
 					.map(other -> new AccountDto(other.login(), other.name()))
 					.toList();
+			log.debug("Loaded {} transfer target accounts", accounts.size());
 
 			model.addAttribute("name", customer.name());
 			model.addAttribute("birthdate", customer.birthdate().format(DateTimeFormatter.ISO_DATE));

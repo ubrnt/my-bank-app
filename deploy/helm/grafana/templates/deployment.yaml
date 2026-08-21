@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bank-common.name" . }}
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "bank-common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/alerting: {{ include (print $.Template.BasePath "/configmap-alerting.yaml") . | sha256sum }}
+      labels:
+        {{- include "bank-common.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: grafana
+          image: {{ .Values.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "bank-common.name" . }}
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: dashboard-providers
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+            - name: alerting
+              mountPath: /etc/grafana/provisioning/alerting
+              readOnly: true
+      volumes:
+        - name: datasources
+          configMap:
+            name: {{ include "bank-common.name" . }}-datasources
+        - name: dashboard-providers
+          configMap:
+            name: {{ include "bank-common.name" . }}-dashboard-providers
+        - name: dashboards
+          configMap:
+            name: {{ include "bank-common.name" . }}-dashboards
+        - name: alerting
+          configMap:
+            name: {{ include "bank-common.name" . }}-alerting

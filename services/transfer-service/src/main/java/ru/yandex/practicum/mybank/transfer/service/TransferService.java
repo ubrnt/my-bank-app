@@ -22,10 +22,13 @@ public class TransferService {
 
 	private final AccountsClient accountsClient;
 	private final TransferOperationJournal journal;
+	private final TransferMetrics metrics;
 
-	public TransferService(AccountsClient accountsClient, TransferOperationJournal journal) {
+	public TransferService(AccountsClient accountsClient, TransferOperationJournal journal,
+			TransferMetrics metrics) {
 		this.accountsClient = accountsClient;
 		this.journal = journal;
+		this.metrics = metrics;
 	}
 
 	public TransferOperationDto transfer(UUID idempotencyKey, String fromLogin, String toLogin, long amount) {
@@ -34,6 +37,8 @@ public class TransferService {
 				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
 
 		if (operation.getStatus() == TransferOperationStatus.COMPLETED) {
+			log.debug("Operation {} already completed, returning the recorded result", operation.getUuid());
+
 			return TransferOperationDto.of(operation);
 		}
 
@@ -52,7 +57,11 @@ public class TransferService {
 		}
 
 		try {
-			return TransferOperationDto.of(journal.complete(operation, transaction));
+			TransferOperationDto completed = TransferOperationDto.of(journal.complete(operation, transaction));
+			log.info("Completed transfer {} from {} to {}: amount {}",
+					operation.getUuid(), fromLogin, toLogin, amount);
+
+			return completed;
 		} catch (ObjectOptimisticLockingFailureException e) {
 			logReclaimed(operation);
 
@@ -61,6 +70,8 @@ public class TransferService {
 	}
 
 	private void fail(TransferOperation operation, String failureReason) {
+		metrics.transferFailed(failureReason);
+
 		try {
 			journal.fail(operation, failureReason);
 		} catch (ObjectOptimisticLockingFailureException e) {

@@ -41,3 +41,8 @@ mybank:
   clients:
     base-urls:
       accounts-service: http://localhost:8082
+
+management:
+  tracing:
+    export:
+      enabled: false

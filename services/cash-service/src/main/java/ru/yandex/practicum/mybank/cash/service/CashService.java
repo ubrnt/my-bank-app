@@ -24,10 +24,12 @@ public class CashService {
 
 	private final AccountsClient accountsClient;
 	private final CashOperationJournal journal;
+	private final CashMetrics metrics;
 
-	public CashService(AccountsClient accountsClient, CashOperationJournal journal) {
+	public CashService(AccountsClient accountsClient, CashOperationJournal journal, CashMetrics metrics) {
 		this.accountsClient = accountsClient;
 		this.journal = journal;
+		this.metrics = metrics;
 	}
 
 	public CashOperationDto deposit(UUID idempotencyKey, String login, long amount) {
@@ -44,6 +46,8 @@ public class CashService {
 				.orElseThrow(() -> new DuplicateRequestException(idempotencyKey));
 
 		if (operation.getStatus() == CashOperationStatus.COMPLETED) {
+			log.debug("Operation {} already completed, returning the recorded result", operation.getUuid());
+
 			return CashOperationDto.of(operation);
 		}
 
@@ -66,7 +70,10 @@ public class CashService {
 		}
 
 		try {
-			return CashOperationDto.of(markCompleted(type, operation, transaction));
+			CashOperationDto completed = CashOperationDto.of(markCompleted(type, operation, transaction));
+			log.info("Completed {} {} for {}: amount {}", type, operation.getUuid(), login, amount);
+
+			return completed;
 		} catch (ObjectOptimisticLockingFailureException e) {
 			logReclaimed(operation);
 
@@ -87,6 +94,8 @@ public class CashService {
 	}
 
 	private void fail(CashOperation operation, String failureReason) {
+		metrics.operationFailed(operation.getType(), failureReason);
+
 		try {
 			journal.fail(operation, failureReason);
 		} catch (ObjectOptimisticLockingFailureException e) {

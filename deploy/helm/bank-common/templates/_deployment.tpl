@@ -14,6 +14,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ include "bank-common.configmap" . | sha256sum }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: {{ .Values.service.port | quote }}
       labels:
         {{- include "bank-common.labels" . | nindent 8 }}
     spec:

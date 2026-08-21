@@ -1,0 +1,75 @@
+{{- $labels := dict "root" . "name" "elk-elasticsearch" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elk-elasticsearch
+  labels:
+    {{- include "elk.labels" $labels | nindent 4 }}
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "elk.selectorLabels" $labels | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "elk.labels" $labels | nindent 8 }}
+    spec:
+      containers:
+        - name: elasticsearch
+          image: {{ .Values.elasticsearch.image }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.elasticsearch.port }}
+              protocol: TCP
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: xpack.security.enabled
+              value: "false"
+            - name: cluster.name
+              value: my-bank-logs
+            - name: ES_JAVA_OPTS
+              value: {{ .Values.elasticsearch.javaOpts | quote }}
+          startupProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            periodSeconds: 20
+          resources:
+            {{- toYaml .Values.elasticsearch.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elk-elasticsearch
+  labels:
+    {{- include "elk.labels" $labels | nindent 4 }}
+spec:
+  selector:
+    {{- include "elk.selectorLabels" $labels | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.elasticsearch.port }}
+      targetPort: http
+      protocol: TCP

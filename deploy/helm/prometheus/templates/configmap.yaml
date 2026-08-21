@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bank-common.name" . }}
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: {{ .Values.scrapeInterval }}
+
+    scrape_configs:
+      - job_name: my-bank-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              own_namespace: true
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            regex: (.+)
+            target_label: __metrics_path__
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            action: replace
+            target_label: application
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+      {{- if .Values.frontService.scrape }}
+      - job_name: front-service
+        metrics_path: /actuator/prometheus
+        static_configs:
+          - targets:
+              - {{ .Values.frontService.target }}
+            labels:
+              application: front-service
+      {{- end }}

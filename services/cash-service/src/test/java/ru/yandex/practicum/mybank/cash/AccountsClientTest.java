@@ -18,13 +18,14 @@ import ru.yandex.practicum.mybank.chassis.client.ServiceCallException;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest(properties = "mybank.accounts.retry.delay=1ms")
+@SpringBootTest(properties = { "mybank.accounts.retry.delay=1ms", "management.tracing.export.enabled=true" })
 @Import({PostgresContainerConfig.class, FakeTokenConfig.class})
 class AccountsClientTest {
 
@@ -42,6 +43,20 @@ class AccountsClientTest {
 	@DynamicPropertySource
 	static void accountsAddress(DynamicPropertyRegistry registry) {
 		registry.add("mybank.clients.base-urls.accounts-service", accounts::baseUrl);
+	}
+
+	@Test
+	void outgoingRequestCarriesTraceContext() {
+		accounts.stubFor(post(urlEqualTo("/api/transactions/deposit"))
+				.willReturn(aResponse()
+						.withStatus(200)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{}")));
+
+		accountsClient.deposit(new TransactionRequest(UUID.randomUUID(), "user1", 500));
+
+		accounts.verify(postRequestedFor(urlEqualTo("/api/transactions/deposit"))
+				.withHeader("traceparent", matching("00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}")));
 	}
 
 	@Test

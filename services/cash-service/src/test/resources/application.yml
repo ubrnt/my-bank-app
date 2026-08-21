@@ -39,3 +39,8 @@ mybank:
       batch-size: 20
       stale-timeout: 5m
       max-attempts: 5
+
+management:
+  tracing:
+    export:
+      enabled: false

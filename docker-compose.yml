@@ -19,5 +19,9 @@ services:
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/my-bank/protocol/openid-connect/token
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/my-bank/protocol/openid-connect/certs
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_INFO_URI: http://keycloak:8080/realms/my-bank/protocol/openid-connect/userinfo
+      MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT: ${ZIPKIN_ENDPOINT:-http://zipkin.127.0.0.1.nip.io:8081/api/v2/spans}
+      MYBANK_LOGGING_LOGSTASH_DESTINATION: ${LOGSTASH_DESTINATION:-host.docker.internal:5000}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "zipkin.127.0.0.1.nip.io:host-gateway"
+      - "zipkin-test.127.0.0.1.nip.io:host-gateway"

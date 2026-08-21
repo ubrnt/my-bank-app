@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bank-common.name" . }}-datasources
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bank-common.name" . }}-dashboard-providers
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+data:
+  providers.yaml: |
+    apiVersion: 1
+    providers:
+      - name: my-bank
+        folder: My Bank
+        type: file
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bank-common.name" . }}-dashboards
+  labels:
+    {{- include "bank-common.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "dashboards/*.json").AsConfig | indent 2 }}

@@ -18,6 +18,7 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http, WebEndpointProperties endpoints) throws Exception {
 		String healthPath = endpoints.getBasePath() + "/health/**";
+		String prometheusPath = endpoints.getBasePath() + "/prometheus";
 
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
@@ -25,6 +26,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(requests -> requests
 						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
 						.requestMatchers(HttpMethod.GET, healthPath).permitAll()
+						.requestMatchers(HttpMethod.GET, prometheusPath).permitAll()
 						.anyRequest().denyAll())
 				.build();
 	}

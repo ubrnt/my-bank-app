@@ -29,3 +29,8 @@ mybank:
   clients:
     base-urls:
       gateway: http://localhost:8081
+
+management:
+  tracing:
+    export:
+      enabled: false
