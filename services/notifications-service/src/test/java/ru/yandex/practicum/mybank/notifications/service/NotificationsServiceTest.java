@@ -110,11 +110,11 @@ class NotificationsServiceTest {
 				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
 				.isInstanceOf(UnknownRecipientException.class);
 
-		assertThat(deliveryFailures(NotificationsMetrics.UNKNOWN_LOGIN, "unknown_recipient")).isEqualTo(1.0);
+		assertThat(deliveryFailures("unknown_recipient")).isEqualTo(1.0);
 	}
 
 	@Test
-	void countsUndeliverableEventByRecipientLogin() {
+	void countsUndeliverableEvent() {
 		when(accountsClient.getCustomer(RECIPIENT_UUID))
 				.thenReturn(new CustomerResponse("user1", "Иванов Иван"));
 		when(messageRenderer.render(EventType.MONEY_DEPOSITED, payload))
@@ -124,12 +124,12 @@ class NotificationsServiceTest {
 				EVENT_UUID, EventType.MONEY_DEPOSITED, RECIPIENT_UUID, payload))
 				.isInstanceOf(InvalidEventException.class);
 
-		assertThat(deliveryFailures("user1", "invalid_event")).isEqualTo(1.0);
+		assertThat(deliveryFailures("invalid_event")).isEqualTo(1.0);
 	}
 
-	private double deliveryFailures(String login, String reason) {
+	private double deliveryFailures(String reason) {
 		return meterRegistry.get(NotificationsMetrics.DELIVERY_FAILURES)
-				.tags("login", login, "reason", reason)
+				.tags("reason", reason)
 				.counter()
 				.count();
 	}

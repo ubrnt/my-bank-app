@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 public class NotificationsMetrics {
 
 	public static final String DELIVERY_FAILURES = "bank.notification.delivery.failures";
-	public static final String UNKNOWN_LOGIN = "unknown";
 
 	private final MeterRegistry meterRegistry;
 
@@ -16,10 +15,9 @@ public class NotificationsMetrics {
 		this.meterRegistry = meterRegistry;
 	}
 
-	public void deliveryFailed(String login, String reason) {
+	public void deliveryFailed(String reason) {
 		Counter.builder(DELIVERY_FAILURES)
 				.description("Notifications that could not be delivered")
-				.tag("login", login)
 				.tag("reason", reason)
 				.register(meterRegistry)
 				.increment();

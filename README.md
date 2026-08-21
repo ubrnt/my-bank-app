@@ -507,8 +507,7 @@ Joining them would take the trace context stored in the outbox, see
 
 Actuator exposes `/actuator/prometheus` in every service and in the UI, and the endpoint is open
 without a token, same as health. The ingress does not route it, so it is reachable from inside the
-cluster only, which is what keeps the login tags below out of reach. A real deployment would close it
-to everything but the Prometheus service account.
+cluster only. A real deployment would close it to everything but the Prometheus service account.
 
 Prometheus finds its targets itself: `kubernetes_sd_configs` asks the API server for pods and keeps
 those carrying `prometheus.io/scrape`, taking path and port from the neighbouring annotations. That
@@ -519,9 +518,12 @@ Beside HTTP, JVM and Spring Boot metrics, services publish three custom counters
 
 | Metric | Tags | Grows when |
 |--------|------|------------|
-| `bank_cash_operation_failures_total` | `type`, `login`, `reason` | a deposit or a withdrawal was rejected by accounts or accounts was unreachable |
-| `bank_transfer_failures_total` | `from_login`, `to_login`, `reason` | a transfer failed, for either reason |
-| `bank_notification_delivery_failures_total` | `login`, `reason` | a notification cannot be delivered at all: unknown recipient or a broken event |
+| `bank_cash_operation_failures_total` | `type`, `reason` | a deposit or a withdrawal was rejected by accounts or accounts was unreachable |
+| `bank_transfer_failures_total` | `reason` | a transfer failed, for either reason |
+| `bank_notification_delivery_failures_total` | `reason` | a notification cannot be delivered at all: unknown recipient or a broken event |
+
+Counters carry no login: a login as a label value grows the number of series with every customer, and
+Prometheus keeps each one for the whole retention window, which may lead to its degradation.
 
 ### Dashboards and alerts
 
@@ -540,9 +542,9 @@ the repository holds is what Grafana shows.
 | Latency percentiles | p50, p95 and p99 from `http_server_requests_seconds_bucket` |
 | 4xx responses per second | the same rate with `status=~"4.."` |
 | 5xx responses per second | the same rate with `status=~"5.."` |
-| Failed withdrawals | `bank_cash_operation_failures_total{type="withdraw"}` by login and reason |
-| Failed transfers | `bank_transfer_failures_total` by logins and reason |
-| Undeliverable notifications | `bank_notification_delivery_failures_total` by login and reason |
+| Failed withdrawals | `bank_cash_operation_failures_total{type="withdraw"}` by reason |
+| Failed transfers | `bank_transfer_failures_total` by reason |
+| Undeliverable notifications | `bank_notification_delivery_failures_total` by reason |
 
 Five alert rules ship with the chart, with thresholds in `grafana.alerts` of the values file:
 
@@ -552,7 +554,7 @@ Five alert rules ship with the chart, with thresholds in `grafana.alerts` of the
 | Slow HTTP responses | p95 above 1 second for 5 minutes |
 | Failed withdrawals spike | more than 3 failed withdrawals within 5 minutes |
 | Failed transfers spike | more than 3 failed transfers within 5 minutes |
-| Undeliverable notifications | any notification could not be delivered at all |
+| Undeliverable notifications | any notification could not be delivered within 5 minutes |
 
 Alerts use the default contact point, which sends nothing, and are read in Grafana under Alerting.
 Business rules treat missing data as normal: their counters do not exist until the first failure.

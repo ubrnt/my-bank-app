@@ -94,7 +94,7 @@ public class CashService {
 	}
 
 	private void fail(CashOperation operation, String failureReason) {
-		metrics.operationFailed(operation.getType(), operation.getCustomerLogin(), failureReason);
+		metrics.operationFailed(operation.getType(), failureReason);
 
 		try {
 			journal.fail(operation, failureReason);

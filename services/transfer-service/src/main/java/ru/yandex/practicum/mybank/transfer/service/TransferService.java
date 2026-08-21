@@ -47,11 +47,11 @@ public class TransferService {
 			transaction = accountsClient.transfer(
 					new TransactionRequest(operation.getUuid(), fromLogin, toLogin, amount));
 		} catch (TransactionRejectedException e) {
-			fail(operation, fromLogin, toLogin, e.getCode());
+			fail(operation, e.getCode());
 
 			throw e;
 		} catch (ServiceCallException e) {
-			fail(operation, fromLogin, toLogin, AccountsServiceUnavailableException.CODE);
+			fail(operation, AccountsServiceUnavailableException.CODE);
 
 			throw new AccountsServiceUnavailableException(e);
 		}
@@ -69,8 +69,8 @@ public class TransferService {
 		}
 	}
 
-	private void fail(TransferOperation operation, String fromLogin, String toLogin, String failureReason) {
-		metrics.transferFailed(fromLogin, toLogin, failureReason);
+	private void fail(TransferOperation operation, String failureReason) {
+		metrics.transferFailed(failureReason);
 
 		try {
 			journal.fail(operation, failureReason);

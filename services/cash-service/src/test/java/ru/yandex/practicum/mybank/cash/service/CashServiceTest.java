@@ -27,7 +27,7 @@ class CashServiceTest {
 	private final CashService cashService = new CashService(accountsClient, journal, new CashMetrics(meterRegistry));
 
 	@Test
-	void countsRejectedWithdrawalByLoginAndReason() {
+	void countsRejectedWithdrawalByReason() {
 		claimReturns(new CashOperation(IDEMPOTENCY_KEY, "user1", CashOperationType.WITHDRAW, 500));
 		when(accountsClient.withdraw(any()))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
@@ -35,7 +35,7 @@ class CashServiceTest {
 		assertThatThrownBy(() -> cashService.withdraw(IDEMPOTENCY_KEY, "user1", 500))
 				.isInstanceOf(TransactionRejectedException.class);
 
-		assertThat(operationFailures("withdraw", "user1", "insufficient_funds")).isEqualTo(1.0);
+		assertThat(operationFailures("withdraw", "insufficient_funds")).isEqualTo(1.0);
 	}
 
 	@Test
@@ -46,8 +46,7 @@ class CashServiceTest {
 		assertThatThrownBy(() -> cashService.withdraw(IDEMPOTENCY_KEY, "user1", 500))
 				.isInstanceOf(AccountsServiceUnavailableException.class);
 
-		assertThat(operationFailures("withdraw", "user1", AccountsServiceUnavailableException.CODE))
-				.isEqualTo(1.0);
+		assertThat(operationFailures("withdraw", AccountsServiceUnavailableException.CODE)).isEqualTo(1.0);
 	}
 
 	@Test
@@ -59,7 +58,7 @@ class CashServiceTest {
 		assertThatThrownBy(() -> cashService.deposit(IDEMPOTENCY_KEY, "user1", 500))
 				.isInstanceOf(TransactionRejectedException.class);
 
-		assertThat(operationFailures("deposit", "user1", "customer_account_not_found")).isEqualTo(1.0);
+		assertThat(operationFailures("deposit", "customer_account_not_found")).isEqualTo(1.0);
 		assertThat(meterRegistry.find(CashMetrics.OPERATION_FAILURES).tags("type", "withdraw").counter())
 				.isNull();
 	}
@@ -69,9 +68,9 @@ class CashServiceTest {
 				operation.getAmount())).thenReturn(Optional.of(operation));
 	}
 
-	private double operationFailures(String type, String login, String reason) {
+	private double operationFailures(String type, String reason) {
 		return meterRegistry.get(CashMetrics.OPERATION_FAILURES)
-				.tags("type", type, "login", login, "reason", reason)
+				.tags("type", type, "reason", reason)
 				.counter()
 				.count();
 	}

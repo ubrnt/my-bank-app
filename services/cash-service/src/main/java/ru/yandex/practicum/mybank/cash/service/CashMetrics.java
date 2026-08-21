@@ -18,11 +18,10 @@ public class CashMetrics {
 		this.meterRegistry = meterRegistry;
 	}
 
-	public void operationFailed(CashOperationType type, String login, String reason) {
+	public void operationFailed(CashOperationType type, String reason) {
 		Counter.builder(OPERATION_FAILURES)
 				.description("Failed cash operation attempts")
 				.tag("type", type.name().toLowerCase(Locale.ROOT))
-				.tag("login", login)
 				.tag("reason", reason)
 				.register(meterRegistry)
 				.increment();

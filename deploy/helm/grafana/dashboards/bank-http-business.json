@@ -241,8 +241,8 @@
       },
       "targets": [
         {
-          "expr": "sum by (login, reason) (bank_cash_operation_failures_total{type=\"withdraw\"})",
-          "legendFormat": "{{login}}: {{reason}}",
+          "expr": "sum by (reason) (bank_cash_operation_failures_total{type=\"withdraw\"})",
+          "legendFormat": "{{reason}}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -285,8 +285,8 @@
       },
       "targets": [
         {
-          "expr": "sum by (from_login, to_login, reason) (bank_transfer_failures_total)",
-          "legendFormat": "{{from_login}} -> {{to_login}}: {{reason}}",
+          "expr": "sum by (reason) (bank_transfer_failures_total)",
+          "legendFormat": "{{reason}}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -329,8 +329,8 @@
       },
       "targets": [
         {
-          "expr": "sum by (login, reason) (bank_notification_delivery_failures_total)",
-          "legendFormat": "{{login}}: {{reason}}",
+          "expr": "sum by (reason) (bank_notification_delivery_failures_total)",
+          "legendFormat": "{{reason}}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",

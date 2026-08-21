@@ -27,7 +27,7 @@ class TransferServiceTest {
 			new TransferService(accountsClient, journal, new TransferMetrics(meterRegistry));
 
 	@Test
-	void countsRejectedTransferByLoginsAndReason() {
+	void countsRejectedTransferByReason() {
 		claimReturns(new TransferOperation(IDEMPOTENCY_KEY, "user1", 500));
 		when(accountsClient.transfer(any()))
 				.thenThrow(new TransactionRejectedException("insufficient_funds", "Not enough money"));
@@ -35,7 +35,7 @@ class TransferServiceTest {
 		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.isInstanceOf(TransactionRejectedException.class);
 
-		assertThat(transferFailures("user1", "user2", "insufficient_funds")).isEqualTo(1.0);
+		assertThat(transferFailures("insufficient_funds")).isEqualTo(1.0);
 	}
 
 	@Test
@@ -46,16 +46,16 @@ class TransferServiceTest {
 		assertThatThrownBy(() -> transferService.transfer(IDEMPOTENCY_KEY, "user1", "user2", 500))
 				.isInstanceOf(AccountsServiceUnavailableException.class);
 
-		assertThat(transferFailures("user1", "user2", AccountsServiceUnavailableException.CODE)).isEqualTo(1.0);
+		assertThat(transferFailures(AccountsServiceUnavailableException.CODE)).isEqualTo(1.0);
 	}
 
 	private void claimReturns(TransferOperation operation) {
 		when(journal.tryClaim(IDEMPOTENCY_KEY, "user1", "user2", 500)).thenReturn(Optional.of(operation));
 	}
 
-	private double transferFailures(String fromLogin, String toLogin, String reason) {
+	private double transferFailures(String reason) {
 		return meterRegistry.get(TransferMetrics.TRANSFER_FAILURES)
-				.tags("from_login", fromLogin, "to_login", toLogin, "reason", reason)
+				.tags("reason", reason)
 				.counter()
 				.count();
 	}

@@ -15,11 +15,9 @@ public class TransferMetrics {
 		this.meterRegistry = meterRegistry;
 	}
 
-	public void transferFailed(String fromLogin, String toLogin, String reason) {
+	public void transferFailed(String reason) {
 		Counter.builder(TRANSFER_FAILURES)
 				.description("Failed money transfer attempts")
-				.tag("from_login", fromLogin)
-				.tag("to_login", toLogin)
 				.tag("reason", reason)
 				.register(meterRegistry)
 				.increment();
