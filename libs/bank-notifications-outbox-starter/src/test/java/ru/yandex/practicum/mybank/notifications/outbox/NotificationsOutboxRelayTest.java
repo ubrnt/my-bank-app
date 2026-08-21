@@ -1,11 +1,7 @@
 package ru.yandex.practicum.mybank.notifications.outbox;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.net.ConnectException;
@@ -15,25 +11,21 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class NotificationsOutboxRelayTest {
 
 	private static final UUID RECIPIENT_UUID = UUID.fromString("3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111");
 	private static final String PAYLOAD_JSON = "{\"uuid\":\"cccc0001-2222-4333-8444-555566660003\"}";
 
-	@Mock
-	private NotificationsOutboxService notificationsOutboxService;
-
-	@Mock
-	private NotificationsEventPublisher notificationsEventPublisher;
-
-	@InjectMocks
-	private NotificationsOutboxRelay notificationsOutboxRelay;
+	private final NotificationsOutboxService notificationsOutboxService = mock(NotificationsOutboxService.class);
+	private final NotificationsEventPublisher notificationsEventPublisher = mock(NotificationsEventPublisher.class);
+	private final NotificationsOutboxRelay notificationsOutboxRelay =
+			new NotificationsOutboxRelay(notificationsOutboxService, notificationsEventPublisher);
 
 	@Test
 	void doesNotCallNotificationsWhenNothingClaimed() {

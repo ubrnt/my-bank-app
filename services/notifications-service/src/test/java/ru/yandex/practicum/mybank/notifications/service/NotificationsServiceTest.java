@@ -1,13 +1,8 @@
 package ru.yandex.practicum.mybank.notifications.service;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 import ru.yandex.practicum.mybank.notifications.client.AccountsClient;
 import ru.yandex.practicum.mybank.notifications.client.CustomerResolutionException;
 import ru.yandex.practicum.mybank.notifications.client.UnknownRecipientException;
@@ -27,12 +22,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class NotificationsServiceTest {
 
 	private static final UUID EVENT_UUID = UUID.fromString("1b7f4a90-0d51-4c2e-9f77-0a1e5c3b0001");
@@ -43,22 +38,12 @@ class NotificationsServiceTest {
 			{"uuid": "cccc0001-2222-4333-8444-555566660001", "type": "DEPOSIT"}
 			""");
 
-	@Mock
-	private NotificationRepository notificationRepository;
-
-	@Mock
-	private MessageRenderer messageRenderer;
-
-	@Mock
-	private AccountsClient accountsClient;
-
+	private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
+	private final MessageRenderer messageRenderer = mock(MessageRenderer.class);
+	private final AccountsClient accountsClient = mock(AccountsClient.class);
 	private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
-
-	@Spy
-	private NotificationsMetrics metrics = new NotificationsMetrics(meterRegistry);
-
-	@InjectMocks
-	private NotificationsService notificationsService;
+	private final NotificationsService notificationsService = new NotificationsService(
+			notificationRepository, messageRenderer, accountsClient, new NotificationsMetrics(meterRegistry));
 
 	@Test
 	void resolvesRecipientRendersAndSaves() {

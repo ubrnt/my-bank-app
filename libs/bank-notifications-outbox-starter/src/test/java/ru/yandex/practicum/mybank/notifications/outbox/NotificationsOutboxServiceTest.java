@@ -2,10 +2,7 @@ package ru.yandex.practicum.mybank.notifications.outbox;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
@@ -15,10 +12,10 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class NotificationsOutboxServiceTest {
 
 	private static final UUID CUSTOMER_UUID = UUID.fromString("3f2a77c4-1e08-4a6b-8f21-9c0d5b7e1111");
@@ -31,8 +28,8 @@ class NotificationsOutboxServiceTest {
 	private record CustomerPayload(UUID uuid, String login, String name) {
 	}
 
-	@Mock
-	private NotificationsOutboxEventRepository notificationsOutboxEventRepository;
+	private final NotificationsOutboxEventRepository notificationsOutboxEventRepository =
+			mock(NotificationsOutboxEventRepository.class);
 
 	private NotificationsOutboxService notificationsOutboxService;
 
